@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- CampusPulse: an open door (a free room) with a green light beside it. -->
+  <rect width="32" height="32" rx="7" fill="#131b2e" />
+  <path d="M11 7h9a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-9z" fill="none" stroke="#ffffff" stroke-width="2" stroke-linejoin="round" />
+  <circle cx="13" cy="16" r="1.4" fill="#ffffff" />
+  <circle cx="25" cy="9" r="3" fill="#4edea3" />
+</svg>
