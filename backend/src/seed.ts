@@ -17,9 +17,9 @@
 //    * one school-bus route for the seeded driver
 // ===========================================================================
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { db } from "./database.js";
+import { db, getPool } from "./database.js";
 import {
   batches,
   buildings,
@@ -43,10 +43,21 @@ type SeedOptions = { quiet?: boolean };
 
 const BUILDING_NAMES = ["Main Building", "Engineering Block", "Science Block", "Library & Arts Block", "Annex"];
 
+/**
+ * Creates the account if it is not there, and returns it either way.
+ *
+ * The obvious "SELECT, and INSERT when it is missing" has a gap between the
+ * two statements: two backends starting at the same moment (a restart that
+ * overlaps the old process, `npm run dev` open in two terminals) both see no
+ * admin, both insert, and the loser dies on the username unique index — which
+ * abandons the whole seed, so the campus and the timetable never appear.
+ *
+ * Letting the DATABASE settle it closes the gap: insert, tell PostgreSQL to
+ * ignore a conflict, and read the row back when the insert was the one that
+ * lost. `onConflictDoNothing` with no target covers both unique columns
+ * (`username` and `open_id`).
+ */
 async function ensureAccount(input: { username: string; name: string; role: Role; email?: string }) {
-  const existing = await db().select().from(users).where(eq(users.username, input.username)).limit(1);
-  if (existing[0]) return { user: existing[0], created: false };
-
   const inserted = await db()
     .insert(users)
     .values({
@@ -57,8 +68,15 @@ async function ensureAccount(input: { username: string; name: string; role: Role
       passwordHash: hashPassword(ENV.seedPassword),
       role: input.role,
     })
+    .onConflictDoNothing()
     .returning();
-  return { user: inserted[0]!, created: true };
+
+  if (inserted[0]) return { user: inserted[0], created: true };
+
+  // Somebody else has it — either an earlier run or the instance that raced us.
+  const existing = await db().select().from(users).where(eq(users.username, input.username)).limit(1);
+  if (!existing[0]) throw new Error(`Could not create or find the "${input.username}" account.`);
+  return { user: existing[0], created: false };
 }
 
 /** The 4 x 6 x 6 campus. Rooms are numbered by the rule, never by hand. */
@@ -83,7 +101,12 @@ async function seedCampus(log: (message: string) => void) {
       const floor = (
         await db().insert(floors).values({ buildingId: buildingRow.id, level, label: `Floor ${level}` }).onConflictDoNothing().returning()
       )[0];
-      const floorRow = floor ?? (await db().select().from(floors).where(eq(floors.buildingId, buildingRow.id)).limit(1))[0];
+      // The fallback MUST match on the level too. Without it, a conflicting
+      // insert fell back to the building's FIRST floor and every room on every
+      // level was hung off floor 1 — the room numbers would still read 325
+      // while `floor_id` pointed at floor 1.
+      const floorRow =
+        floor ?? (await db().select().from(floors).where(and(eq(floors.buildingId, buildingRow.id), eq(floors.level, level))).limit(1))[0];
       if (!floorRow) continue;
 
       const roomRows = [];
@@ -172,17 +195,23 @@ async function seedTimetable(log: (message: string) => void) {
   }
 }
 
-/** One bus, one route, so the transport screens are not empty either. */
+/**
+ * One bus, one route, so the transport screens are not empty either.
+ *
+ * The vehicle insert is the gate for everything below it. It can conflict on
+ * `driver_id` or on the plate, so a lost race returns no row — and this
+ * function then stops rather than going on to create a SECOND "North Line"
+ * against a bus it does not own.
+ */
 async function seedBus(driverId: number, log: (message: string) => void) {
-  const existing = await db().select().from(vehicles).where(eq(vehicles.driverId, driverId)).limit(1);
-  if (existing[0]) return;
-
   const bus = (
     await db()
       .insert(vehicles)
       .values({ driverId, plateNumber: "1A-2345", vehicleType: "School bus", model: "Hino Rainbow", totalSeats: 32, monthlyFeeCents: 25_000 })
+      .onConflictDoNothing()
       .returning()
-  )[0]!;
+  )[0];
+  if (!bus) return; // the bus already exists, or another instance just made it
 
   await db().insert(driverProfiles).values({ userId: driverId, phone: "09-750000000", licenseNumber: "DL-889912" }).onConflictDoNothing();
 
@@ -213,7 +242,46 @@ async function seedBus(driverId: number, log: (message: string) => void) {
   log("  school bus   1 bus, 1 route (North Line)");
 }
 
+/**
+ * A key for PostgreSQL's advisory locks. Any constant does; it only has to be
+ * the same number in every copy of this application.
+ */
+const SEED_LOCK_KEY = 815_243_001;
+
+/**
+ * Runs the seed with a campus-wide lock held, so only ONE backend seeds even
+ * when several start at the same moment.
+ *
+ * Why a lock and not a guard per statement: most steps CAN protect themselves
+ * (a unique index on the username, on the room number, on the plate). The
+ * weekly timetable cannot — `timetable_entries` has no natural unique key, and
+ * its guard is "are there any rows yet?". Two instances both read zero, both
+ * insert, and the demo week silently appears TWICE, so every room shows each
+ * class twice. No per-row rule can prevent that; the run itself has to be
+ * serialised.
+ *
+ * The lock is taken on one dedicated connection held for the whole seed, not
+ * on a pooled one, because a session-level advisory lock belongs to the
+ * connection that took it. The second instance blocks here, then finds every
+ * step already done and writes nothing. If the process dies mid-seed the
+ * connection drops and PostgreSQL releases the lock by itself.
+ */
+async function withSeedLock<T>(run: () => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("SELECT pg_advisory_lock($1)", [SEED_LOCK_KEY]);
+    return await run();
+  } finally {
+    await client.query("SELECT pg_advisory_unlock($1)", [SEED_LOCK_KEY]).catch(() => undefined);
+    client.release();
+  }
+}
+
 export async function seedDatabase(options: SeedOptions = {}) {
+  return withSeedLock(() => runSeed(options));
+}
+
+async function runSeed(options: SeedOptions = {}) {
   const log = (message: string) => {
     if (!options.quiet) console.log(message);
   };
