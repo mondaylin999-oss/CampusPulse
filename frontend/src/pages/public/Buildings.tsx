@@ -9,13 +9,13 @@
 
 import { useEffect, useState } from "react";
 import { Building2, ChevronRight } from "lucide-react";
-import { api, type BuildingRow, type RoomBoard } from "@/lib/api";
+import { api, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
 import { Card, EmptyState, ErrorNote, Notice, PageHeader, Spinner } from "@/components/ui";
 
 export default function Buildings() {
-  const buildings = useApiData<{ buildings: BuildingRow[] }>(() => api.get("/rooms/buildings"), []);
+  const buildings = useApiData<BuildingOverview>(() => api.get("/rooms/buildings"), [], { pollMs: 60_000 });
   const [buildingCode, setBuildingCode] = useState<number | null>(null);
   const [floorLevel, setFloorLevel] = useState<number | null>(null);
 
@@ -60,6 +60,17 @@ export default function Buildings() {
               <Building2 className="h-4 w-4" />
               <span className="tabular">{row.code}</span>
               <span className="hidden sm:inline">{row.name}</span>
+              <span
+                className={`tabular ml-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  active
+                    ? "bg-on-primary/20 text-on-primary"
+                    : row.availableNow
+                      ? "bg-secondary-container text-on-secondary-container"
+                      : "bg-error-container text-on-error-container"
+                }`}
+              >
+                {row.availableNow} free
+              </span>
             </button>
           );
         })}
@@ -87,8 +98,10 @@ export default function Buildings() {
                   : "border-outline-variant text-on-surface hover:bg-surface-container-high"
               }`}
               onClick={() => setFloorLevel(floor.level)}
+              title={`${floor.availableNow} of ${floor.roomCount} rooms free`}
             >
               {floor.level}
+              <span className={`ml-1.5 text-[10px] font-bold ${floor.availableNow ? "text-secondary" : "text-error"}`}>{floor.availableNow}</span>
             </button>
           ))}
         </div>

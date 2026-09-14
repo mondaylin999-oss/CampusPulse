@@ -10,7 +10,7 @@
 // ===========================================================================
 
 import { Router } from "express";
-import { getCampusPulse, getRoomBoard, getRoomDetail, getRoomWeek, listBuildings } from "../rooms/rooms.js";
+import { getBuildingOverview, getCampusPulse, getRoomBoard, getRoomDetail, getRoomWeek } from "../rooms/rooms.js";
 import { listExceptions } from "../rooms/timetable.js";
 import { addDays, campusNow } from "../time.js";
 import { notFound, route } from "../http.js";
@@ -30,10 +30,19 @@ roomsRouter.get(
   route(async () => getCampusPulse()),
 );
 
-/** Every building with its floors and how many rooms each holds. */
+/**
+ * Every building with its floors, how many rooms each holds, and how many of
+ * them are FREE at the moment asked about. Accepts the same ?date= &minute=
+ * as the board, so the building list can be time-travelled too.
+ */
 roomsRouter.get(
   "/buildings",
-  route(async () => ({ buildings: await listBuildings() })),
+  route(async req =>
+    getBuildingOverview({
+      date: typeof req.query.date === "string" ? req.query.date : undefined,
+      minute: asNumber(req.query.minute),
+    }),
+  ),
 );
 
 /**
@@ -43,6 +52,7 @@ roomsRouter.get(
  *   /rooms?available=1                 only what is free this minute
  *   /rooms?minFreeMinutes=120          free for the next two hours
  *   /rooms?search=32                   room numbers starting 32
+ *   /rooms?kind=lab&minCapacity=30     a lab that seats at least 30
  *   /rooms?date=2026-09-15&minute=600  the board as it will be then
  */
 roomsRouter.get(
@@ -56,6 +66,8 @@ roomsRouter.get(
       search: typeof req.query.search === "string" ? req.query.search : undefined,
       availableOnly: asFlag(req.query.available),
       minFreeMinutes: asNumber(req.query.minFreeMinutes),
+      kind: typeof req.query.kind === "string" ? req.query.kind : undefined,
+      minCapacity: asNumber(req.query.minCapacity),
     }),
   ),
 );

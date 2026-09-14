@@ -10,10 +10,14 @@
 import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
 import { Filter, Search } from "lucide-react";
-import { api, type BuildingRow, type RoomBoard } from "@/lib/api";
+import { api, ROOM_KINDS, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
-import { Card, EmptyState, ErrorNote, Notice, PageHeader, Select, Spinner } from "@/components/ui";
+import { NOW, WhenPicker, isNow, whenQuery, type When } from "@/components/WhenPicker";
+import { Button, Card, EmptyState, ErrorNote, Notice, PageHeader, Select, Spinner } from "@/components/ui";
+
+/** Seat counts worth filtering on — a tutorial group vs a whole year. */
+const CAPACITIES = [0, 20, 30, 50, 100];
 
 /** The lengths students actually ask for. */
 const DURATIONS = [
@@ -32,22 +36,39 @@ export default function FindRoom() {
   const [building, setBuilding] = useState("");
   const [floor, setFloor] = useState("");
   const [minMinutes, setMinMinutes] = useState(0);
+  const [kind, setKind] = useState("");
+  const [minCapacity, setMinCapacity] = useState(0);
+  const [when, setWhen] = useState<When>(NOW);
 
-  const buildings = useApiData<{ buildings: BuildingRow[] }>(() => api.get("/rooms/buildings"), []);
+  const buildings = useApiData<BuildingOverview>(() => api.get("/rooms/buildings", whenQuery(when)), [when.date, when.minute]);
 
   const board = useApiData<RoomBoard>(
     () =>
       api.get<RoomBoard>("/rooms", {
+        ...whenQuery(when),
         building: building || undefined,
         floor: floor || undefined,
         search: roomSearch.trim() || undefined,
+        kind: kind || undefined,
+        minCapacity: minCapacity || undefined,
         // With no duration asked for, "available" means available this minute.
         available: minMinutes ? undefined : true,
         minFreeMinutes: minMinutes || undefined,
       }),
-    [building, floor, roomSearch, minMinutes],
-    { pollMs: 60_000 },
+    [building, floor, roomSearch, minMinutes, kind, minCapacity, when.date, when.minute],
+    // Only poll while the page is showing NOW; a chosen moment does not move.
+    { pollMs: isNow(when) ? 60_000 : undefined },
   );
+
+  const filtered = Boolean(building || floor || roomSearch.trim() || minMinutes || kind || minCapacity);
+  const reset = () => {
+    setBuilding("");
+    setFloor("");
+    setRoomSearch("");
+    setMinMinutes(0);
+    setKind("");
+    setMinCapacity(0);
+  };
 
   const floorsOfBuilding = useMemo(() => {
     if (!building) return [];
@@ -60,12 +81,21 @@ export default function FindRoom() {
     <div className="space-y-stack-md">
       <PageHeader
         title="Find an available room"
-        subtitle={board.data ? `${board.data.moment.dateLabel} · ${board.data.moment.clock}` : "Reading the timetable…"}
+        subtitle={
+          board.data
+            ? `${board.data.moment.dateLabel} · ${board.data.moment.clock}${board.data.moment.isToday && isNow(when) ? "" : " — a chosen moment, not now"}`
+            : "Reading the timetable…"
+        }
+        actions={filtered ? <Button variant="ghost" onClick={reset}>Reset filters</Button> : null}
       />
 
       {board.data?.holiday ? <Notice tone="warning">University holiday — {board.data.holiday.reason}.</Notice> : null}
 
       {/* ---------- filters ---------- */}
+      <Card title="When do you need it?" accent="rooms">
+        <WhenPicker value={when} onChange={setWhen} />
+      </Card>
+
       <Card title="What do you need?" accent="rooms">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
@@ -94,7 +124,7 @@ export default function FindRoom() {
               <option value="">Any building</option>
               {(buildings.data?.buildings ?? []).map(row => (
                 <option key={row.id} value={row.code}>
-                  {row.code} — {row.name}
+                  {row.code} — {row.name} ({row.availableNow} free)
                 </option>
               ))}
             </Select>
@@ -106,7 +136,7 @@ export default function FindRoom() {
               <option value="">{building ? "Any floor" : "Choose a building first"}</option>
               {floorsOfBuilding.map(row => (
                 <option key={row.id} value={row.level}>
-                  Floor {row.level}
+                  Floor {row.level} ({row.availableNow} free)
                 </option>
               ))}
             </Select>
@@ -118,6 +148,29 @@ export default function FindRoom() {
               {DURATIONS.map(option => (
                 <option key={option.minutes} value={option.minutes}>
                   {option.label}
+                </option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="block">
+            <span className="field-label">Room type</span>
+            <Select value={kind} onChange={event => setKind(event.target.value)}>
+              <option value="">Any type</option>
+              {ROOM_KINDS.map(option => (
+                <option key={option} value={option}>
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="block">
+            <span className="field-label">Seats at least</span>
+            <Select value={minCapacity} onChange={event => setMinCapacity(Number(event.target.value))}>
+              {CAPACITIES.map(option => (
+                <option key={option} value={option}>
+                  {option ? `${option} people` : "Any size"}
                 </option>
               ))}
             </Select>

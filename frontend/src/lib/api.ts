@@ -291,8 +291,20 @@ export type BuildingRow = {
   name: string;
   shortName: string | null;
   roomCount: number;
-  floors: Array<{ id: number; level: number; label: string | null; roomCount: number }>;
+  /** How many of this building's rooms are free at the moment asked about. */
+  availableNow: number;
+  floors: Array<{ id: number; level: number; label: string | null; roomCount: number; availableNow: number }>;
 };
+
+/** GET /rooms/buildings */
+export type BuildingOverview = {
+  moment: Moment;
+  holiday: { reason: string } | null;
+  buildings: BuildingRow[];
+};
+
+export const ROOM_KINDS = ["lecture", "lab", "seminar", "studio", "office"] as const;
+export type RoomKind = (typeof ROOM_KINDS)[number];
 
 export type RoomDetail = {
   moment: Moment;

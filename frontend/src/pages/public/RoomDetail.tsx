@@ -9,9 +9,10 @@
 import { useRoute } from "wouter";
 import { Link } from "wouter";
 import { ArrowLeft, Building2, CalendarDays, Users } from "lucide-react";
-import { api, DAY_NAMES, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/api";
+import { api, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { AvailabilityLine, SessionRow, StatusPill } from "@/components/rooms";
+import { WeekGrid } from "@/components/WeekGrid";
 import { Card, EmptyState, ErrorNote, PageHeader, Spinner } from "@/components/ui";
 
 export default function RoomDetail() {
@@ -107,35 +108,11 @@ export default function RoomDetail() {
       </Card>
 
       {/* ---------- the normal week ---------- */}
-      <Card title="Normal weekly timetable" subtitle="What usually happens here — one-off changes are shown above, on the day itself.">
+      <Card title="Normal weekly timetable" subtitle="The gaps are the point — anything white is free in a normal week.">
         {week.loading && !week.data ? <Spinner /> : null}
-        {week.data ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {week.data.days
-              .filter(day => day.sessions.length)
-              .map(day => (
-                <div key={day.dayOfWeek} className="rounded-lg border border-outline-variant p-3">
-                  <p className="text-[13px] font-bold text-on-surface">{DAY_NAMES[day.dayOfWeek]}</p>
-                  <ul className="mt-2 space-y-1.5">
-                    {day.sessions.map(session => (
-                      <li key={session.id} className="text-[12px] leading-snug">
-                        <span className="tabular font-semibold text-on-surface">
-                          {session.startTime}–{session.endTime}
-                        </span>{" "}
-                        <span className="text-on-surface-variant">
-                          {[session.batchName, session.subjectName ?? session.title].filter(Boolean).join(" — ") || "Reserved"}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            {week.data.days.every(day => !day.sessions.length) ? (
-              <EmptyState title="No weekly classes" description="This room has no regular timetable yet." />
-            ) : null}
-          </div>
-        ) : null}
+        {week.data ? <WeekGrid week={week.data} todayDayOfWeek={moment.dayOfWeek} /> : null}
       </Card>
+
     </div>
   );
 }

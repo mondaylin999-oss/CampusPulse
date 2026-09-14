@@ -8,7 +8,7 @@
 //  Everything here is PUBLIC: no login is needed to look up a free classroom.
 // ===========================================================================
 
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gte, sql } from "drizzle-orm";
 import { db } from "../database.js";
 import { batches, buildings, floors, rooms, scheduleExceptions, subjects, timetableEntries } from "../../drizzle/schema.js";
 import { ENV } from "../env.js";
@@ -22,6 +22,9 @@ import {
   type RoomAvailability,
   type WeeklyEntry,
 } from "./availability.js";
+
+/** The kinds a room may be. Mirrors the room_kind enum in schema.sql. */
+export const ROOM_KINDS = ["lecture", "lab", "seminar", "studio", "office"] as const;
 
 // --- the shape the frontend receives ---------------------------------------
 
@@ -50,6 +53,10 @@ export type BoardFilter = {
   availableOnly?: boolean;
   /** Only rooms free for at least this many minutes from `minute`. */
   minFreeMinutes?: number;
+  /** Only rooms of this kind: lecture, lab, seminar, studio, office. */
+  kind?: string;
+  /** Only rooms that seat at least this many people. */
+  minCapacity?: number;
 };
 
 // --- catalogue reads --------------------------------------------------------
@@ -97,11 +104,15 @@ export async function listBuildings() {
   return Array.from(assembled.values());
 }
 
-export async function listRoomRecords(filter: { building?: number; floor?: number; search?: string } = {}) {
+export async function listRoomRecords(filter: { building?: number; floor?: number; search?: string; kind?: string; minCapacity?: number } = {}) {
   const conditions = [eq(rooms.active, true)];
   if (filter.building) conditions.push(eq(rooms.buildingCode, filter.building));
   if (filter.floor) conditions.push(eq(rooms.floorLevel, filter.floor));
   if (filter.search?.trim()) conditions.push(sql`${rooms.roomNumber} LIKE ${`${filter.search.trim()}%`}`);
+  // A bad ?kind= is ignored rather than being an error: this is a public URL
+  // that people edit by hand, and an unknown value should not 500.
+  if (filter.kind && (ROOM_KINDS as readonly string[]).includes(filter.kind)) conditions.push(sql`${rooms.kind}::text = ${filter.kind}`);
+  if (filter.minCapacity && filter.minCapacity > 0) conditions.push(gte(rooms.capacity, filter.minCapacity));
 
   return db()
     .select({
@@ -235,7 +246,13 @@ export async function getRoomBoard(filter: BoardFilter = {}) {
   const [entries, exceptions, roomRows] = await Promise.all([
     loadWeeklyEntries(moment.dayOfWeek),
     loadExceptions(moment.dateKey),
-    listRoomRecords({ building: filter.building, floor: filter.floor, search: filter.search }),
+    listRoomRecords({
+      building: filter.building,
+      floor: filter.floor,
+      search: filter.search,
+      kind: filter.kind,
+      minCapacity: filter.minCapacity,
+    }),
   ]);
 
   const sessionsByRoom = effectiveSessionsForDate({
@@ -280,6 +297,32 @@ export async function getRoomBoard(filter: BoardFilter = {}) {
     holiday: holiday ? { reason: holiday.reason ?? holiday.title ?? "University holiday" } : null,
     summary,
     rooms: cards,
+  };
+}
+
+/**
+ * Every building with a LIVE count of how many of its rooms are free.
+ *
+ * The building list is the first thing a student sees, so it should already
+ * answer "is it worth walking over there?". The counts are worked out from the
+ * same board the room pages use — never stored, never a second source of truth.
+ */
+export async function getBuildingOverview(filter: Pick<BoardFilter, "date" | "minute"> = {}) {
+  const [structure, board] = await Promise.all([listBuildings(), getRoomBoard(filter)]);
+
+  const freeIn = (buildingCode: number, floorLevel?: number) =>
+    board.rooms.filter(
+      room => room.buildingCode === buildingCode && (floorLevel === undefined || room.floorLevel === floorLevel) && room.availability.status === "available",
+    ).length;
+
+  return {
+    moment: board.moment,
+    holiday: board.holiday,
+    buildings: structure.map(building => ({
+      ...building,
+      availableNow: freeIn(building.code),
+      floors: building.floors.map(floor => ({ ...floor, availableNow: freeIn(building.code, floor.level) })),
+    })),
   };
 }
 
