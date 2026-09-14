@@ -8,7 +8,7 @@
 
 import { useRoute } from "wouter";
 import { Link } from "wouter";
-import { ArrowLeft, Building2, CalendarDays, Users } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, MapPin, Users } from "lucide-react";
 import { api, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { AvailabilityLine, SessionRow, StatusPill } from "@/components/rooms";
@@ -40,7 +40,18 @@ export default function RoomDetail() {
             {room.buildingName} (Building {room.buildingCode}) · Floor {room.floorLevel} · Room {room.position}
           </span>
         }
-        actions={<StatusPill availability={availability} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Only offered when the building is actually on the map — a link
+                that leads to an empty map is worse than no link. */}
+            {room.buildingLatitude && room.buildingLongitude ? (
+              <Link href={`/buildings?view=map&building=${room.buildingCode}`} className="btn btn-ghost h-9 text-[13px]">
+                <MapPin className="h-4 w-4" /> View on map
+              </Link>
+            ) : null}
+            <StatusPill availability={availability} />
+          </div>
+        }
       />
 
       {/* ---------- the answer, in one card ---------- */}

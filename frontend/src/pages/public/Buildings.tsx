@@ -8,6 +8,7 @@
 // ===========================================================================
 
 import { useEffect, useState } from "react";
+import { useSearch } from "wouter";
 import { Building2, ChevronRight, LayoutGrid, Map as MapIcon } from "lucide-react";
 import { api, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
@@ -16,12 +17,21 @@ import { CampusMap } from "@/components/CampusMap";
 import { Card, EmptyState, ErrorNote, Notice, PageHeader, Spinner } from "@/components/ui";
 
 export default function Buildings() {
+  // Arriving from a room page: /buildings?view=map&building=3 opens the map
+  // already looking at that building, so "view on map" lands somewhere useful
+  // instead of on whichever building happens to be first.
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const askedBuilding = Number(params.get("building"));
+  const askedMap = params.get("view") === "map";
+
   const buildings = useApiData<BuildingOverview>(() => api.get("/rooms/buildings"), [], { pollMs: 60_000 });
-  const [buildingCode, setBuildingCode] = useState<number | null>(null);
+  const [buildingCode, setBuildingCode] = useState<number | null>(Number.isFinite(askedBuilding) && askedBuilding > 0 ? askedBuilding : null);
   const [floorLevel, setFloorLevel] = useState<number | null>(null);
   // Which way to choose a building: the chips, or the campus map. Remembered
   // for this browser, because it is a lasting preference rather than a step.
   const [view, setView] = useState<"list" | "map">(() => {
+    if (askedMap) return "map"; // the link asked for the map explicitly
     try {
       return localStorage.getItem("campuspulse_buildings_view") === "map" ? "map" : "list";
     } catch {
@@ -38,9 +48,13 @@ export default function Buildings() {
     }
   };
 
-  // Open the first building automatically — an empty screen helps nobody.
+  // Open the first building automatically — an empty screen helps nobody. The
+  // same guard covers a link naming a building that does not exist (an old
+  // bookmark, a hand-edited URL): fall back rather than render nothing.
   useEffect(() => {
-    if (buildingCode === null && buildings.data?.buildings.length) setBuildingCode(buildings.data.buildings[0]!.code);
+    const known = buildings.data?.buildings ?? [];
+    if (!known.length) return;
+    if (buildingCode === null || !known.some(row => row.code === buildingCode)) setBuildingCode(known[0]!.code);
   }, [buildings.data, buildingCode]);
 
   const building = buildings.data?.buildings.find(row => row.code === buildingCode) ?? null;

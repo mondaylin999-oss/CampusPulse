@@ -358,6 +358,9 @@ export async function getRoomDetail(roomNumber: string, filter: Pick<BoardFilter
       active: rooms.active,
       buildingName: buildings.name,
       floorLabel: floors.label,
+      // So the room page knows whether "view on map" can lead anywhere.
+      buildingLatitude: buildings.latitude,
+      buildingLongitude: buildings.longitude,
     })
     .from(rooms)
     .innerJoin(floors, eq(floors.id, rooms.floorId))

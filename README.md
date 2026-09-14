@@ -253,7 +253,10 @@ Administrator only: everything under `/admin/*`.
 per browser. Each pin carries the building's number and **how many of its rooms
 are free this minute**, coloured green / amber / red — with the number always
 beside the colour, so the colour is never the only thing carrying the message.
-Tapping a pin opens that building's rooms.
+Tapping a pin opens that building's rooms, and a room page links back to its
+building on the map ("View on map" → `/buildings?view=map&building=3`). That
+link is only offered when the building has actually been placed: a link onto
+an empty map is worse than no link.
 
 Coordinates live on `buildings.latitude` / `.longitude` and are **NULL until an
 administrator places the building**, which is done by clicking the map in

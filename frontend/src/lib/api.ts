@@ -324,6 +324,9 @@ export type RoomDetail = {
     active: boolean;
     buildingName: string;
     floorLabel: string | null;
+    /** Null when the building has not been placed on the campus map. */
+    buildingLatitude: string | null;
+    buildingLongitude: string | null;
   };
   availability: RoomAvailability;
   movedAway: Array<{ exceptionId: number; reason: string | null }>;
