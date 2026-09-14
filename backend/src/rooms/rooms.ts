@@ -8,20 +8,25 @@
 //  Everything here is PUBLIC: no login is needed to look up a free classroom.
 // ===========================================================================
 
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../database.js";
-import { batches, buildings, floors, rooms, scheduleExceptions, subjects, timetableEntries } from "../../drizzle/schema.js";
+import { batches, buildings, floors, roomBookings, rooms, scheduleExceptions, subjects, timetableEntries, users } from "../../drizzle/schema.js";
 import { ENV } from "../env.js";
 import { campusNow, dateLabel, isDateKey, isoDayOfWeek, minutesToClock } from "../time.js";
 import {
   effectiveSessionsForDate,
   freeForWindow,
   roomAvailabilityAt,
+  type BookingRow,
   type EffectiveSession,
   type ExceptionRow,
   type RoomAvailability,
   type WeeklyEntry,
 } from "./availability.js";
+
+/** `users` under another name: a booking joins it for the person who holds it. */
+const bookingOwner = alias(users, "booking_owner");
 
 /** The kinds a room may be. Mirrors the room_kind enum in schema.sql. */
 export const ROOM_KINDS = ["lecture", "lab", "seminar", "studio", "office"] as const;
@@ -220,6 +225,39 @@ async function loadExceptions(dateKey: string): Promise<ExceptionRow[]> {
   }));
 }
 
+/** Rooms held by staff on this date. Cancelled ones hold nothing. */
+async function loadBookings(dateKey: string): Promise<BookingRow[]> {
+  return db()
+    .select({
+      id: roomBookings.id,
+      roomId: roomBookings.roomId,
+      startMinute: roomBookings.startMinute,
+      endMinute: roomBookings.endMinute,
+      purpose: roomBookings.purpose,
+      bookedByName: bookingOwner.name,
+    })
+    .from(roomBookings)
+    .leftJoin(bookingOwner, eq(bookingOwner.id, roomBookings.bookedById))
+    .where(and(eq(roomBookings.onDate, dateKey), ne(roomBookings.status, "cancelled")));
+}
+
+/**
+ * Everything that decides what happens on one date, in one round trip.
+ *
+ * Shared by the board, the room page and the booking rules, so all three see
+ * the same day. A booking screen that loaded its own idea of "busy" would
+ * eventually disagree with the board, and then two people would turn up at the
+ * same door.
+ */
+export async function loadDayContext(dateKey: string) {
+  const [entries, exceptions, bookings] = await Promise.all([
+    loadWeeklyEntries(isoDayOfWeek(dateKey)),
+    loadExceptions(dateKey),
+    loadBookings(dateKey),
+  ]);
+  return { entries, exceptions, bookings };
+}
+
 // --- the board --------------------------------------------------------------
 
 /** The date and minute a request is asking about — today and now by default. */
@@ -257,9 +295,8 @@ export function resolveMoment(filter: Pick<BoardFilter, "date" | "minute">) {
  */
 export async function getRoomBoard(filter: BoardFilter = {}) {
   const moment = resolveMoment(filter);
-  const [entries, exceptions, roomRows] = await Promise.all([
-    loadWeeklyEntries(moment.dayOfWeek),
-    loadExceptions(moment.dateKey),
+  const [context, roomRows] = await Promise.all([
+    loadDayContext(moment.dateKey),
     listRoomRecords({
       building: filter.building,
       floor: filter.floor,
@@ -272,11 +309,12 @@ export async function getRoomBoard(filter: BoardFilter = {}) {
   const sessionsByRoom = effectiveSessionsForDate({
     dateKey: moment.dateKey,
     dayOfWeek: moment.dayOfWeek,
-    entries,
-    exceptions,
+    entries: context.entries,
+    exceptions: context.exceptions,
+    bookings: context.bookings,
   });
 
-  const holiday = exceptions.find(row => row.kind === "holiday") ?? null;
+  const holiday = context.exceptions.find(row => row.kind === "holiday") ?? null;
 
   let cards: RoomCard[] = roomRows.map(room => ({
     id: room.id,
@@ -371,16 +409,23 @@ export async function getRoomDetail(roomNumber: string, filter: Pick<BoardFilter
   const room = found[0];
   if (!room) return null;
 
-  const [entries, exceptions] = await Promise.all([loadWeeklyEntries(moment.dayOfWeek), loadExceptions(moment.dateKey)]);
-  const sessions = effectiveSessionsForDate({ dateKey: moment.dateKey, dayOfWeek: moment.dayOfWeek, entries, exceptions }).get(room.id) ?? [];
+  const context = await loadDayContext(moment.dateKey);
+  const sessions =
+    effectiveSessionsForDate({
+      dateKey: moment.dateKey,
+      dayOfWeek: moment.dayOfWeek,
+      entries: context.entries,
+      exceptions: context.exceptions,
+      bookings: context.bookings,
+    }).get(room.id) ?? [];
 
   return {
     moment,
     room,
     availability: roomAvailabilityAt(sessions, moment.minute, { dayEndMinute: ENV.dayEndMinute }),
     /** The classes that left this room today because of an exception. */
-    movedAway: exceptions
-      .filter(row => row.kind === "move_room" && entries.some(entry => entry.id === row.entryId && entry.roomId === room.id))
+    movedAway: context.exceptions
+      .filter(row => row.kind === "move_room" && context.entries.some(entry => entry.id === row.entryId && entry.roomId === room.id))
       .map(row => ({ exceptionId: row.id, reason: row.reason })),
   };
 }

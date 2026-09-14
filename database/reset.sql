@@ -8,6 +8,7 @@
 -- ===========================================================================
 BEGIN;
 
+DROP TABLE IF EXISTS room_bookings       CASCADE;
 DROP TABLE IF EXISTS schedule_exceptions CASCADE;
 DROP TABLE IF EXISTS timetable_entries   CASCADE;
 DROP TABLE IF EXISTS subjects            CASCADE;

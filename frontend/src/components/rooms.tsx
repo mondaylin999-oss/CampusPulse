@@ -108,15 +108,16 @@ export function RoomTile({ room }: { room: RoomCard }) {
 }
 
 /** A row in "today in this room" — the whole day, in order. */
-export function SessionRow({ session, nowMinute }: { session: EffectiveSession; nowMinute?: number }) {
+export function SessionRow({ session, nowMinute, onGiveBack }: { session: EffectiveSession; nowMinute?: number; onGiveBack?: (bookingId: number) => void }) {
   const live = nowMinute !== undefined && session.startMinute <= nowMinute && nowMinute < session.endMinute;
   const done = nowMinute !== undefined && session.endMinute <= nowMinute;
   const changed = session.origin !== "timetable";
+  const booked = session.origin === "booking";
 
   return (
     <li
       className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${
-        live ? "border-error/50 bg-error-container/30" : done ? "border-outline-variant opacity-60" : "border-outline-variant"
+        live ? "border-error/50 bg-error-container/30" : done ? "border-outline-variant opacity-60" : booked ? "border-tertiary/40" : "border-outline-variant"
       }`}
     >
       <span className="tabular w-[92px] shrink-0 text-[13px] font-semibold text-on-surface">
@@ -126,7 +127,11 @@ export function SessionRow({ session, nowMinute }: { session: EffectiveSession; 
         <span className="block truncate text-[14px] font-semibold text-on-surface">{session.label}</span>
         {session.teacher ? <span className="block truncate text-[12px] text-on-surface-variant">{session.teacher}</span> : null}
         {changed && session.note ? (
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[11px] font-semibold text-on-warning-container">
+          <span
+            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+              booked ? "bg-tertiary-container text-on-tertiary-container" : "bg-warning-container text-on-warning-container"
+            }`}
+          >
             {session.note}
           </span>
         ) : null}
@@ -135,6 +140,14 @@ export function SessionRow({ session, nowMinute }: { session: EffectiveSession; 
         <span className="chip bg-error-container text-on-error-container normal-case tracking-normal">
           <Clock className="h-3 w-3" /> now
         </span>
+      ) : null}
+      {onGiveBack && session.bookingId ? (
+        <button
+          className="rounded px-2 py-1 text-[11px] font-semibold text-error hover:bg-error-container"
+          onClick={() => onGiveBack(session.bookingId!)}
+        >
+          Give back
+        </button>
       ) : null}
     </li>
   );

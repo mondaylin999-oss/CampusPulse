@@ -9,7 +9,8 @@
 //
 //  What it creates
 //  ---------------
-//    * the administrator, one bus driver and one demo student
+//    * the administrator, a room-booking staff account, one bus driver and
+//      one demo student
 //    * the campus: SEED_BUILDINGS x SEED_FLOORS x SEED_ROOMS_PER_FLOOR rooms
 //      (4 x 6 x 6 = 144 by default)
 //    * a few batches and subjects, and a small demo week of classes so the
@@ -309,11 +310,13 @@ async function runSeed(options: SeedOptions = {}) {
   const admin = await ensureAccount({ username: "admin", name: "University Office", role: "admin" });
   const driver = await ensureAccount({ username: "driver", name: "U Aung Aung", role: "driver" });
   const student = await ensureAccount({ username: "student", name: "Ma Ei Ei", role: "user" });
+  // The room-booking role: staff the office trusts to hold a room.
+  const agent = await ensureAccount({ username: "staff", name: "Daw Khin Khin", role: "agent" });
 
-  if (admin.created || driver.created || student.created) {
+  if (admin.created || driver.created || student.created || agent.created) {
     log("\n  CampusPulse — first run");
     log("  ────────────────────────────────────────────────────────");
-    log(`  admin / driver / student   password: ${ENV.seedPassword}`);
+    log(`  admin / staff / driver / student   password: ${ENV.seedPassword}`);
   }
 
   await seedCampus(log);

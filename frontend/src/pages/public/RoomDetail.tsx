@@ -13,6 +13,7 @@ import { api, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/
 import { useApiData } from "@/hooks/useApiData";
 import { AvailabilityLine, SessionRow, StatusPill } from "@/components/rooms";
 import { WeekGrid } from "@/components/WeekGrid";
+import { BookRoom } from "@/components/BookRoom";
 import { Card, EmptyState, ErrorNote, PageHeader, Spinner } from "@/components/ui";
 
 export default function RoomDetail() {
@@ -104,6 +105,9 @@ export default function RoomDetail() {
         </p>
         {room.notes ? <p className="mt-2 text-[13px] text-on-surface-variant">{room.notes}</p> : null}
       </Card>
+
+      {/* ---------- booking ---------- */}
+      <BookRoom room={room} moment={moment} onBooked={() => void detail.refresh()} />
 
       {/* ---------- today ---------- */}
       <Card title="Today in this room" subtitle={moment.dateLabel}>

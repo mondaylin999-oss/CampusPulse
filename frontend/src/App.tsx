@@ -35,6 +35,9 @@ import NotFound from "@/pages/NotFound";
 // ---- student ----
 import Me from "@/pages/student/Me";
 
+// ---- staff who may hold a room ----
+import MyBookings from "@/pages/staff/MyBookings";
+
 // ---- driver (carried over from the school-bus system) ----
 import BusConsole from "@/pages/driver/BusConsole";
 import RouteEditor from "@/pages/driver/RouteEditor";
@@ -98,6 +101,13 @@ export default function App() {
         <Route path="/me">
           <Guard roles={["user"]}>
             <Me />
+          </Guard>
+        </Route>
+
+        {/* ---------------- room booking (staff + office) ---------------- */}
+        <Route path="/bookings">
+          <Guard roles={["agent", "admin"]}>
+            <MyBookings />
           </Guard>
         </Route>
 

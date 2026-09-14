@@ -26,7 +26,7 @@
 --  Sections 3-4 are the school-bus tables carried over unchanged from the
 --  existing system, so the bus module keeps working exactly as it did. Only
 --  the canteen/wallet tables were left behind — this platform has no canteen.
---  Section 5 is the new room/timetable half.
+--  Section 5 is the new room/timetable half, including room bookings.
 -- ===========================================================================
 
 BEGIN;
@@ -391,6 +391,47 @@ CREATE INDEX IF NOT EXISTS schedule_exceptions_entry_idx ON schedule_exceptions 
 CREATE INDEX IF NOT EXISTS schedule_exceptions_room_idx  ON schedule_exceptions (room_id, on_date);
 
 -- ---------------------------------------------------------------------------
+-- 5f. Room bookings — a room taken by a member of staff, not by the timetable.
+--
+--     WHO. Booking is a PRIVILEGE, not something every visitor may do. It
+--     belongs to the `agent` role: departmental staff, society officers, lab
+--     technicians — whoever the office trusts to hold a room. A student sees
+--     the bookings (they make the room busy) but cannot make one.
+--
+--     WHY A SEPARATE TABLE. A booking is not a class, so it does not belong in
+--     `timetable_entries`; and it is not an administrator's correction to the
+--     timetable, so it does not belong in `schedule_exceptions`. It is its own
+--     thing, owned by the person who made it, who may take it back.
+--
+--     It still OCCUPIES THE ROOM. The availability calculator treats a booking
+--     exactly like a class, so a booked room reads Occupied on the public
+--     board — otherwise two people would turn up at the same door.
+--
+--     `status` reuses booking_status from the bus module. An agent's booking is
+--     'confirmed' the moment it is made — the office has already vouched for
+--     them by giving them the role — and cancelling sets 'cancelled' rather
+--     than deleting, so there is a record of what was held and given back.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS room_bookings (
+  id              SERIAL PRIMARY KEY,
+  room_id         INTEGER  NOT NULL REFERENCES rooms (id) ON DELETE CASCADE,
+  booked_by_id    INTEGER  NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  on_date         DATE     NOT NULL,
+  start_minute    SMALLINT NOT NULL CHECK (start_minute BETWEEN 0 AND 1439),
+  end_minute      SMALLINT NOT NULL CHECK (end_minute BETWEEN 1 AND 1440),
+  purpose         VARCHAR(160),
+  attendees       INTEGER CHECK (attendees > 0),
+  status          booking_status NOT NULL DEFAULT 'confirmed',
+  cancelled_by_id INTEGER REFERENCES users (id) ON DELETE SET NULL,
+  cancel_reason   VARCHAR(280),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT room_bookings_time_order CHECK (end_minute > start_minute)
+);
+CREATE INDEX IF NOT EXISTS room_bookings_room_date_idx ON room_bookings (room_id, on_date, status);
+CREATE INDEX IF NOT EXISTS room_bookings_owner_idx     ON room_bookings (booked_by_id, on_date DESC);
+
+-- ---------------------------------------------------------------------------
 -- 6. updated_at is maintained by the database, not by the application.
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
@@ -419,5 +460,5 @@ COMMIT;
 -- Quick check — run this after the script finishes:
 --     SELECT table_name FROM information_schema.tables
 --      WHERE table_schema = 'public' ORDER BY table_name;
--- You should see 16 tables.
+-- You should see 17 tables.
 -- ---------------------------------------------------------------------------

@@ -18,6 +18,8 @@ CampusPulse
 ├── Timetable            the day as a grid, and the published changes
 ├── School Bus           routes, stops, times, seats  (booking needs a login)
 └── Admin                timetable, campus, changes, people, driver permission
+
+Roles:  visitor (no account) · student · staff (books rooms) · bus driver · administrator
 ```
 
 ---
@@ -115,6 +117,7 @@ route, and three logins:
 | Username  | Role          | Password   |
 | --------- | ------------- | ---------- |
 | `admin`   | Administrator | `campus123` |
+| `staff`   | Books rooms   | `campus123` |
 | `driver`  | Bus driver    | `campus123` |
 | `student` | Student       | `campus123` |
 
@@ -219,6 +222,7 @@ frontend/src/
   lib/                api, auth, prefs, i18n, format
   pages/
     public/           Home, FindRoom, Buildings, RoomDetail, Timetable, Bus
+    staff/            MyBookings — the rooms an agent is holding
     student/          Me (my seat + ask to drive), BusSeats, MySeat
     driver/           BusConsole, RouteEditor      (from the existing system)
     admin/            Overview, TimetableManager, Campus, Changes, People
@@ -239,9 +243,11 @@ Public — **no authentication anywhere in this group**:
 | `GET /rooms/buildings`       | buildings, floors, room counts, free-now counts, map pins |
 | `GET /rooms/changes/upcoming`| cancellations, moves and holidays ahead           |
 | `GET /transport/public/routes` `…/roads` | bus routes, stops, times, seats left  |
+| `GET /bookings/rules`        | may the current visitor book, and within what limits |
 | `GET /health`                | database, engine, and the campus clock            |
 
-Signed in: `/transport/seats` (student), `/transport/driver/*` (driver),
+Signed in: `/bookings` (staff hold a room; the office sees them all),
+`/transport/seats` (student), `/transport/driver/*` (driver),
 `/transport/driver-applications` (ask to drive).
 Administrator only: everything under `/admin/*`.
 
@@ -273,7 +279,40 @@ key and no account. Leaflet is imported dynamically, so its ~150KB stays out of
 the bundle for anyone who never opens a map, and if the tiles cannot load the
 page says so and the list view carries on working.
 
-## 8. Timetable changes
+## 8. Room bookings
+
+A room can also be held by a person rather than by the timetable — a staff
+meeting, a society rehearsal, a make-up class.
+
+**Booking is a privilege, not a public feature.** It belongs to the `agent`
+role ("Staff — may book rooms"), granted by the administrator in *People &
+Drivers*. A student pressing **Make a booking** is not shown a broken button:
+the page asks `/bookings/rules` and explains who may book instead, so the
+button can never offer something the API would refuse.
+
+**A booking occupies the room exactly like a class.** It goes through the same
+calculator, so a booked room reads 🔴 Occupied on the public board and the
+"free for 2 hours" search skips it — otherwise two groups would turn up at the
+same door. It is refused unless the room is free for the *whole* window, and
+the refusal names what is in the way: *"Room 325 is not free then — 13:00-14:00
+Third Year CS."*
+
+There is exactly one definition of "free" in this codebase, and the booking
+rules do not add a second one.
+
+| Guard rail        | Value                                  |
+| ----------------- | -------------------------------------- |
+| Shortest booking  | 30 minutes                             |
+| Longest booking   | 8 hours (a standing need is a timetable entry) |
+| How far ahead     | 60 days                                |
+| Open at once      | 20 rooms per person                    |
+
+An agent gives back their own rooms; the administrator can give back anybody's,
+because somebody eventually walks away from a room they booked. Cancelling
+marks the row rather than deleting it — when two groups both turn up, the first
+question is who had it.
+
+## 9. Timetable changes
 
 The weekly timetable is **never edited** to record a one-off. The office adds
 an exception for one date, and the board layers it on when it works that date
@@ -289,7 +328,7 @@ out; delete it and the normal week is back. Six kinds, all in
 | `holiday`     | no scheduled teaching anywhere                         |
 | `room_closed` | that room is out of use (all day, or between two times)|
 
-## 9. Conflicts
+## 10. Conflicts
 
 A timetable entry is refused — with the clashing rows named — when it would put
 two classes in one room at the same time, or one class in two rooms at once.
@@ -297,7 +336,7 @@ The admin form asks the same question live while you type
 (`POST /admin/timetable/check`), so a clash is a sentence in the form rather
 than a refusal after Save. The browser never decides: the server checks again.
 
-## 10. Driver permission
+## 11. Driver permission
 
 Nobody becomes a bus driver by signing up.
 
@@ -313,7 +352,7 @@ Permission can also be taken back later — the bus, its routes and the seats
 students already hold are deliberately kept, because deleting them would take
 somebody's seat away without telling them.
 
-## 11. Adding another university service
+## 12. Adding another university service
 
 The architecture is a module per service, and nothing about the room board is
 special:

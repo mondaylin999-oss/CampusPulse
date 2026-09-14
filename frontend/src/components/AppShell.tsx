@@ -19,6 +19,7 @@ import { Link, useLocation } from "wouter";
 import {
   Bus,
   Building2,
+  CalendarCheck,
   CalendarClock,
   Clock,
   DoorOpen,
@@ -66,20 +67,24 @@ const ROLE_NAV: Record<Role, NavItem[]> = {
   ],
   admin: [
     { href: "/admin", label: "Admin Overview", short: "Admin", icon: <ShieldCheck className="h-5 w-5" /> },
+    { href: "/bookings", label: "Room Bookings", short: "Bookings", icon: <CalendarCheck className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/timetable", label: "Timetable Manager", short: "Timetable", icon: <CalendarClock className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/campus", label: "Campus & Rooms", short: "Campus", icon: <Building2 className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/changes", label: "Timetable Changes", short: "Changes", icon: <DoorOpen className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/people", label: "People & Drivers", short: "People", icon: <Users className="h-5 w-5" /> },
     { href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> },
   ],
-  // The canteen agent role exists in the account table from the bus system;
-  // this platform has no screens for it, so it sees the public site only.
-  agent: [{ href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> }],
+  // Staff who may hold a room. The role came from the bus system's account
+  // table unused; on this platform it is the room-booking privilege.
+  agent: [
+    { href: "/bookings", label: "My Bookings", short: "Bookings", icon: <CalendarCheck className="h-5 w-5" />, context: "rooms" },
+    { href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> },
+  ],
 };
 
 const ROLE_LABEL: Record<Role, string> = {
   user: "Student",
-  agent: "Staff",
+  agent: "Staff (room booking)",
   driver: "Bus driver",
   admin: "Administrator",
 };

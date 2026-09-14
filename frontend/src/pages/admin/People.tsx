@@ -13,7 +13,7 @@ import { useApiData } from "@/hooks/useApiData";
 import { dateTime } from "@/lib/format";
 import { Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner, StatusBadge } from "@/components/ui";
 
-type People = { admins: SessionUser[]; drivers: SessionUser[]; students: SessionUser[] };
+type People = { admins: SessionUser[]; agents: SessionUser[]; drivers: SessionUser[]; students: SessionUser[] };
 
 export default function AdminPeople() {
   const people = useApiData<People>(() => api.get("/admin/people"), []);
@@ -41,7 +41,7 @@ export default function AdminPeople() {
 
   return (
     <div className="space-y-stack-md">
-      <PageHeader title="People & drivers" subtitle="Accounts, and who is allowed to run a school bus." />
+      <PageHeader title="People & drivers" subtitle="Accounts, who may hold a room, and who is allowed to run a school bus." />
 
       {note ? <Notice tone={note.tone}>{note.text}</Notice> : null}
       {applications.error ? <ErrorNote message={applications.error} onRetry={() => void applications.refresh()} /> : null}
@@ -173,6 +173,7 @@ export default function AdminPeople() {
           <Field label="Role">
             <Select value={form.role} onChange={event => setForm({ ...form, role: event.target.value })}>
               <option value="user">Student</option>
+              <option value="agent">Staff — may book rooms</option>
               <option value="driver">Bus driver</option>
               <option value="admin">Administrator</option>
             </Select>
@@ -192,6 +193,7 @@ export default function AdminPeople() {
         ? (
             [
               { title: "Administrators", rows: people.data.admins, kind: "admin" as const },
+              { title: "Staff who may book rooms", rows: people.data.agents, kind: "agent" as const },
               { title: "Bus drivers", rows: people.data.drivers, kind: "driver" as const },
               { title: "Students", rows: people.data.students, kind: "user" as const },
             ] as const

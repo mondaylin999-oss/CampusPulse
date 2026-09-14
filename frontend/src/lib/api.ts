@@ -213,7 +213,7 @@ export type Health = {
 
 // --- rooms and the timetable ------------------------------------------------
 
-export type SessionOrigin = "timetable" | "moved_in" | "retimed" | "extra" | "closure";
+export type SessionOrigin = "timetable" | "moved_in" | "retimed" | "extra" | "closure" | "booking";
 
 export type EffectiveSession = {
   entryId: number | null;
@@ -229,6 +229,42 @@ export type EffectiveSession = {
   teacher: string | null;
   origin: SessionOrigin;
   note: string | null;
+  /** Bookings only — lets a screen offer "give it back". */
+  bookingId?: number;
+};
+
+// --- room bookings ----------------------------------------------------------
+
+/** Who the current visitor is allowed to be, booking-wise. */
+export type BookingRules = {
+  mayBook: boolean;
+  signedIn: boolean;
+  limits: { minMinutes: number; maxMinutes: number; maxDaysAhead: number; maxOpenPerAgent: number };
+};
+
+export type RoomBookingRow = {
+  booking: {
+    id: number;
+    roomId: number;
+    bookedById: number;
+    onDate: string;
+    startMinute: number;
+    endMinute: number;
+    purpose: string | null;
+    attendees: number | null;
+    status: "pending" | "confirmed" | "cancelled";
+    cancelReason: string | null;
+    createdAt: string;
+  };
+  roomNumber: string;
+  buildingCode: number;
+  buildingName: string;
+  floorLevel: number;
+  capacity: number;
+  ownerName: string | null;
+  ownerUsername: string | null;
+  startTime: string;
+  endTime: string;
 };
 
 export type RoomStatus = "available" | "occupied" | "closed";

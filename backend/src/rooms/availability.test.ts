@@ -9,7 +9,15 @@
 // ===========================================================================
 
 import { describe, expect, it } from "vitest";
-import { effectiveSessionsForDate, findTimetableConflicts, freeForWindow, roomAvailabilityAt, type ExceptionRow, type WeeklyEntry } from "./availability.js";
+import {
+  effectiveSessionsForDate,
+  findTimetableConflicts,
+  freeForWindow,
+  roomAvailabilityAt,
+  type BookingRow,
+  type ExceptionRow,
+  type WeeklyEntry,
+} from "./availability.js";
 
 const MONDAY = 1;
 const DATE = "2026-09-14"; // a Monday
@@ -151,6 +159,46 @@ describe("exceptions", () => {
     const status = roomAvailabilityAt(sessionsFor(326, closed), 11 * 60);
     expect(status.status).toBe("closed");
     expect(status.current?.note).toBe("Water leak");
+  });
+});
+
+describe("rooms held by staff", () => {
+  const booking = (over: Partial<BookingRow> & { id: number; roomId: number; startMinute: number; endMinute: number }): BookingRow => ({
+    purpose: "Staff meeting",
+    bookedByName: "Daw Khin",
+    ...over,
+  });
+
+  const withBooking = (roomId: number, bookings: BookingRow[], exceptions: ExceptionRow[] = []) =>
+    effectiveSessionsForDate({ dateKey: DATE, dayOfWeek: MONDAY, entries, exceptions, bookings }).get(roomId) ?? [];
+
+  it("a booking makes the room occupied, like a class does", () => {
+    const sessions = withBooking(325, [booking({ id: 1, roomId: 325, startMinute: 11 * 60, endMinute: 12 * 60 })]);
+    const status = roomAvailabilityAt(sessions, 11 * 60 + 20);
+    expect(status.status).toBe("occupied");
+    expect(status.current?.origin).toBe("booking");
+    expect(status.current?.label).toBe("Staff meeting");
+  });
+
+  it("a booking butting onto a class extends when the room frees up", () => {
+    // 325 teaches 09:00-10:00 then 10:00-11:00; a booking 11:00-12:00 means a
+    // student at 09:30 must wait until 12:00, not 11:00.
+    const sessions = withBooking(325, [booking({ id: 2, roomId: 325, startMinute: 11 * 60, endMinute: 12 * 60 })]);
+    expect(roomAvailabilityAt(sessions, 9 * 60 + 30).freeAtTime).toBe("12:00");
+  });
+
+  it("a booking still holds the room on a university holiday", () => {
+    // The weekly grid is cleared, but somebody deliberately booked that date.
+    const holiday = [exception({ id: 9, kind: "holiday", reason: "Thadingyut" })];
+    const sessions = withBooking(325, [booking({ id: 3, roomId: 325, startMinute: 9 * 60, endMinute: 10 * 60 })], holiday);
+    expect(sessions).toHaveLength(1);
+    expect(roomAvailabilityAt(sessions, 9 * 60 + 30).status).toBe("occupied");
+  });
+
+  it("a booked window is not offered to the next booker", () => {
+    const sessions = withBooking(321, [booking({ id: 4, roomId: 321, startMinute: 14 * 60, endMinute: 16 * 60 })]);
+    expect(freeForWindow(sessions, 15 * 60, 60)).toBe(false);
+    expect(freeForWindow(sessions, 16 * 60, 60)).toBe(true); // butting up is allowed
   });
 });
 

@@ -413,6 +413,8 @@ adminRouter.get(
   "/people",
   route(async () => ({
     admins: await listUsersByRole("admin"),
+    /** The room-booking staff. */
+    agents: await listUsersByRole("agent"),
     drivers: await listUsersByRole("driver"),
     students: await listUsersByRole("user"),
   })),
@@ -427,7 +429,7 @@ adminRouter.post(
         username: z.string().min(3).max(64).optional(),
         email: z.string().email().optional(),
         password: z.string().min(6).max(128).optional(),
-        role: z.enum(["admin", "driver", "user"]),
+        role: z.enum(["admin", "agent", "driver", "user"]),
       }),
       req.body,
     );

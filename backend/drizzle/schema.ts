@@ -298,6 +298,33 @@ export const timetableEntries = pgTable(
   ],
 );
 
+/**
+ * A room held by a member of staff (the `agent` role), not by the timetable.
+ * It occupies the room exactly like a class does. See schema.sql §5f.
+ */
+export const roomBookings = pgTable(
+  "room_bookings",
+  {
+    id: serial("id").primaryKey(),
+    roomId: integer("room_id").notNull(),
+    bookedById: integer("booked_by_id").notNull(),
+    onDate: date("on_date").notNull(),
+    startMinute: smallint("start_minute").notNull(),
+    endMinute: smallint("end_minute").notNull(),
+    purpose: varchar("purpose", { length: 160 }),
+    attendees: integer("attendees"),
+    status: bookingStatusEnum("status").notNull().default("confirmed"),
+    cancelledById: integer("cancelled_by_id"),
+    cancelReason: varchar("cancel_reason", { length: 280 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  table => [
+    index("room_bookings_room_date_idx").on(table.roomId, table.onDate, table.status),
+    index("room_bookings_owner_idx").on(table.bookedById, table.onDate),
+  ],
+);
+
 /** A one-date change layered on top of the weekly grid. See schema.sql §5e. */
 export const scheduleExceptions = pgTable(
   "schedule_exceptions",
@@ -344,6 +371,7 @@ export type Batch = typeof batches.$inferSelect;
 export type Subject = typeof subjects.$inferSelect;
 export type TimetableEntry = typeof timetableEntries.$inferSelect;
 export type ScheduleException = typeof scheduleExceptions.$inferSelect;
+export type RoomBooking = typeof roomBookings.$inferSelect;
 
 export type Role = User["role"];
 export type ExceptionKind = ScheduleException["kind"];

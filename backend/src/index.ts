@@ -15,6 +15,8 @@
 //  --------------------
 //    /rooms/*       PUBLIC. Room availability, buildings, timetables.
 //                   No login, no account, no cookie.
+//    /bookings/*    Holding a room. Reading is public; MAKING a booking is
+//                   for the `agent` role, granted by the administrator.
 //    /transport/*   The school bus. Public reads; booking needs a student
 //                   login; running a bus needs the administrator's approval.
 //    /auth/*        Login, registration, "who am I".
@@ -33,6 +35,7 @@ import { attachUser, errorMiddleware, route } from "./http.js";
 import { authRouter } from "./routes/auth.js";
 import { transportRouter } from "./routes/transport.js";
 import { roomsRouter } from "./routes/rooms.js";
+import { bookingsRouter } from "./routes/bookings.js";
 import { adminRouter } from "./routes/admin.js";
 import { seedDatabase } from "./seed.js";
 import { campusNow } from "./time.js";
@@ -92,6 +95,7 @@ app.get(
 
 app.use("/auth", authRouter);
 app.use("/rooms", roomsRouter);
+app.use("/bookings", bookingsRouter);
 app.use("/transport", transportRouter);
 app.use("/admin", adminRouter);
 

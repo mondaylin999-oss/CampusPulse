@@ -63,6 +63,16 @@ export type ExceptionRow = {
   reason: string | null;
 };
 
+/** A room held by a member of staff for part of one date. */
+export type BookingRow = {
+  id: number;
+  roomId: number;
+  startMinute: number;
+  endMinute: number;
+  purpose: string | null;
+  bookedByName: string | null;
+};
+
 /**
  * One session that really occupies a room on the date asked about.
  * `origin` says why it is there, so the UI can mark a moved or added class.
@@ -79,8 +89,10 @@ export type EffectiveSession = {
   batchName: string | null;
   subjectName: string | null;
   teacher: string | null;
-  origin: "timetable" | "moved_in" | "retimed" | "extra" | "closure";
+  origin: "timetable" | "moved_in" | "retimed" | "extra" | "closure" | "booking";
   note: string | null;
+  /** Bookings only: who holds the room, so it can be shown and cancelled. */
+  bookingId?: number;
 };
 
 export type RoomStatus = "available" | "occupied" | "closed";
@@ -158,8 +170,11 @@ export function effectiveSessionsForDate(input: {
   dayOfWeek: number;
   entries: WeeklyEntry[];
   exceptions: ExceptionRow[];
+  /** Rooms held by staff on this date. They occupy a room like a class does. */
+  bookings?: BookingRow[];
 }): Map<number, EffectiveSession[]> {
   const { dateKey, dayOfWeek, entries, exceptions } = input;
+  const bookings = input.bookings ?? [];
 
   const isHoliday = exceptions.some(row => row.kind === "holiday");
 
@@ -262,6 +277,28 @@ export function effectiveSessionsForDate(input: {
         }),
       );
     }
+  }
+
+  // ---- rooms held by staff ------------------------------------------------
+  // A holiday does NOT clear these: somebody deliberately booked the room for
+  // that date, which is exactly when a quiet campus is useful.
+  for (const booking of bookings) {
+    push(
+      toSession({
+        entryId: null,
+        exceptionId: null,
+        bookingId: booking.id,
+        roomId: booking.roomId,
+        startMinute: booking.startMinute,
+        endMinute: booking.endMinute,
+        batchName: null,
+        subjectName: null,
+        teacher: booking.bookedByName,
+        origin: "booking",
+        note: booking.bookedByName ? `Booked by ${booking.bookedByName}` : "Booked",
+        label: booking.purpose?.trim() || "Booked",
+      }),
+    );
   }
 
   for (const list of byRoom.values()) list.sort((a, b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute);
