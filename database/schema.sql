@@ -230,9 +230,20 @@ CREATE TABLE IF NOT EXISTS buildings (
   code       SMALLINT     NOT NULL UNIQUE CHECK (code BETWEEN 1 AND 9),
   name       VARCHAR(120) NOT NULL,
   short_name VARCHAR(32),
+  -- Where the building stands, for the campus map. NULL simply means "not
+  -- placed yet" — the map skips it and the rest of the platform does not care.
+  -- Kept as text, like route_map_nodes, so the two maps parse coordinates the
+  -- same way and no rounding creeps in between the database and Leaflet.
+  latitude   VARCHAR(32),
+  longitude  VARCHAR(32),
   created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+-- Added after the first release: a database made by an earlier version of this
+-- file already has `buildings`, and CREATE TABLE IF NOT EXISTS leaves it alone.
+ALTER TABLE buildings ADD COLUMN IF NOT EXISTS latitude  VARCHAR(32);
+ALTER TABLE buildings ADD COLUMN IF NOT EXISTS longitude VARCHAR(32);
 
 CREATE TABLE IF NOT EXISTS floors (
   id          SERIAL PRIMARY KEY,

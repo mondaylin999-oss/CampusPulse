@@ -14,7 +14,7 @@ CampusPulse
 │
 ├── Home                 free/busy counts, quick room search
 ├── Find a Room          "free now", or "free for the next 2 hours"
-├── Buildings & Rooms    building → floor → the six rooms on it
+├── Buildings & Rooms    a campus map, or building → floor → the rooms on it
 ├── Timetable            the day as a grid, and the published changes
 ├── School Bus           routes, stops, times, seats  (booking needs a login)
 └── Admin                timetable, campus, changes, people, driver permission
@@ -236,7 +236,7 @@ Public — **no authentication anywhere in this group**:
 | `GET /rooms`                 | the board; `?building= &floor= &search= &available=1 &minFreeMinutes= &date= &minute=` |
 | `GET /rooms/:number`         | one room: now, next, and the whole day            |
 | `GET /rooms/:number/week`    | that room's normal week                           |
-| `GET /rooms/buildings`       | buildings, floors and room counts                 |
+| `GET /rooms/buildings`       | buildings, floors, room counts, free-now counts, map pins |
 | `GET /rooms/changes/upcoming`| cancellations, moves and holidays ahead           |
 | `GET /transport/public/routes` `…/roads` | bus routes, stops, times, seats left  |
 | `GET /health`                | database, engine, and the campus clock            |
@@ -247,7 +247,30 @@ Administrator only: everything under `/admin/*`.
 
 ---
 
-## 7. Timetable changes
+## 7. The campus map
+
+**Buildings & Rooms** has a list view and a map view; the choice is remembered
+per browser. Each pin carries the building's number and **how many of its rooms
+are free this minute**, coloured green / amber / red — with the number always
+beside the colour, so the colour is never the only thing carrying the message.
+Tapping a pin opens that building's rooms.
+
+Coordinates live on `buildings.latitude` / `.longitude` and are **NULL until an
+administrator places the building**, which is done by clicking the map in
+**Admin → Campus & rooms** rather than by typing numbers: a building a hundred
+metres out is worse than one that is simply missing, because the map then lies
+confidently. Values are rounded to six decimals (~11cm) on save.
+
+The seed ships placeholder positions on the University of Yangon campus so the
+map is not empty on a first run. They are **not a survey** — drag each building
+to its real spot, or take it off the map.
+
+Leaflet + OpenStreetMap, the same pair the bus route map already used: no API
+key and no account. Leaflet is imported dynamically, so its ~150KB stays out of
+the bundle for anyone who never opens a map, and if the tiles cannot load the
+page says so and the list view carries on working.
+
+## 8. Timetable changes
 
 The weekly timetable is **never edited** to record a one-off. The office adds
 an exception for one date, and the board layers it on when it works that date
@@ -263,7 +286,7 @@ out; delete it and the normal week is back. Six kinds, all in
 | `holiday`     | no scheduled teaching anywhere                         |
 | `room_closed` | that room is out of use (all day, or between two times)|
 
-## 8. Conflicts
+## 9. Conflicts
 
 A timetable entry is refused — with the clashing rows named — when it would put
 two classes in one room at the same time, or one class in two rooms at once.
@@ -271,7 +294,7 @@ The admin form asks the same question live while you type
 (`POST /admin/timetable/check`), so a clash is a sentence in the form rather
 than a refusal after Save. The browser never decides: the server checks again.
 
-## 9. Driver permission
+## 10. Driver permission
 
 Nobody becomes a bus driver by signing up.
 
@@ -287,7 +310,7 @@ Permission can also be taken back later — the bus, its routes and the seats
 students already hold are deliberately kept, because deleting them would take
 somebody's seat away without telling them.
 
-## 10. Adding another university service
+## 11. Adding another university service
 
 The architecture is a module per service, and nothing about the room board is
 special:

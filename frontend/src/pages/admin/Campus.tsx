@@ -8,9 +8,10 @@
 // ===========================================================================
 
 import { useState, type FormEvent } from "react";
-import { Building2, GraduationCap, Plus, Trash2 } from "lucide-react";
+import { Building2, GraduationCap, MapPin, Plus, Trash2, XCircle } from "lucide-react";
 import { api, ApiError, type AdminRoom, type BatchRow, type BuildingRow, type SubjectRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
+import { CampusMap } from "@/components/CampusMap";
 import { Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner } from "@/components/ui";
 
 export default function Campus() {
@@ -30,6 +31,15 @@ export default function Campus() {
       {campus.loading && !campus.data ? <Spinner /> : null}
 
       <BuildingsCard
+        buildings={campus.data?.buildings ?? []}
+        onChanged={async (message: string) => {
+          say("rooms", message);
+          await campus.refresh();
+        }}
+        onError={fail}
+      />
+
+      <PlacementCard
         buildings={campus.data?.buildings ?? []}
         onChanged={async (message: string) => {
           say("rooms", message);
@@ -148,6 +158,120 @@ function BuildingsCard({
           </Button>
         </div>
       </form>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * Where each building stands, set by clicking the map.
+ *
+ * Typing latitude and longitude by hand is both tedious and easy to get wrong
+ * by a digit — and a building a hundred metres out is worse than one that is
+ * simply missing, because the map then lies confidently. So: pick a building,
+ * click where it is. The numbers are shown as well, for anyone who does have a
+ * surveyed figure to paste.
+ */
+function PlacementCard({
+  buildings,
+  onChanged,
+  onError,
+}: {
+  buildings: BuildingRow[];
+  onChanged: (message: string) => Promise<void>;
+  onError: (caught: unknown) => void;
+}) {
+  const [selected, setSelected] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const building = buildings.find(row => row.code === selected) ?? null;
+  const placedCount = buildings.filter(row => row.latitude && row.longitude).length;
+
+  const place = async (latitude: number | null, longitude: number | null) => {
+    if (!building) return;
+    setBusy(true);
+    try {
+      await api.patch(`/admin/buildings/${building.id}`, { latitude, longitude });
+      await onChanged(
+        latitude === null ? `${building.name} taken off the map.` : `${building.name} placed at ${latitude.toFixed(5)}, ${longitude!.toFixed(5)}.`,
+      );
+    } catch (caught) {
+      onError(caught);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card
+      title="Where the buildings are"
+      subtitle={`${placedCount} of ${buildings.length} placed. Students see these pins on the public campus map.`}
+      actions={<MapPin className="h-5 w-5 text-on-surface-variant" />}
+    >
+      {buildings.length ? (
+        <>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] font-semibold uppercase tracking-wider text-on-surface-variant">Place</span>
+            {buildings.map(row => {
+              const active = row.code === selected;
+              const placed = Boolean(row.latitude && row.longitude);
+              return (
+                <button
+                  key={row.id}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-semibold transition-colors ${
+                    active ? "border-primary bg-primary text-on-primary" : "border-outline-variant text-on-surface hover:bg-surface-container-high"
+                  }`}
+                  onClick={() => setSelected(active ? null : row.code)}
+                  aria-pressed={active}
+                >
+                  <span className="tabular">{row.code}</span>
+                  <span className="hidden sm:inline">{row.name}</span>
+                  {placed ? <MapPin className="h-3.5 w-3.5 opacity-70" /> : <span className="text-[10px] uppercase opacity-70">not placed</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <Notice tone={building ? "rooms" : "neutral"}>
+            {building
+              ? `Click the map to put ${building.name} there.${busy ? " Saving…" : ""}`
+              : "Choose a building above, then click the map to place it."}
+          </Notice>
+
+          <div className="mt-3">
+            <CampusMap
+              buildings={buildings}
+              selectedCode={selected}
+              onSelect={code => setSelected(code)}
+              onPick={(latitude, longitude) => void place(latitude, longitude)}
+              height={420}
+            />
+          </div>
+
+          {building ? (
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <p className="text-[13px] text-on-surface-variant">
+                {building.name}:{" "}
+                {building.latitude && building.longitude ? (
+                  <span className="tabular font-semibold text-on-surface">
+                    {building.latitude}, {building.longitude}
+                  </span>
+                ) : (
+                  "not on the map yet"
+                )}
+              </p>
+              {building.latitude ? (
+                <Button variant="ghost" busy={busy} onClick={() => void place(null, null)}>
+                  <XCircle className="h-4 w-4" /> Take off the map
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <EmptyState title="No buildings yet" description="Add a building above before placing it." />
+      )}
     </Card>
   );
 }

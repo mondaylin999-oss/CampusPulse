@@ -44,6 +44,20 @@ type SeedOptions = { quiet?: boolean };
 const BUILDING_NAMES = ["Main Building", "Engineering Block", "Science Block", "Library & Arts Block", "Annex"];
 
 /**
+ * Where the demo buildings stand, so the campus map has something on it the
+ * first time it is opened. These are PLACEHOLDERS on the University of Yangon
+ * campus, not a survey — an administrator drags each building to its real spot
+ * on the admin map (Campus & rooms), or clears them.
+ */
+const BUILDING_PLACES: Array<{ latitude: string; longitude: string }> = [
+  { latitude: "16.83250", longitude: "96.13330" },
+  { latitude: "16.83180", longitude: "96.13480" },
+  { latitude: "16.83370", longitude: "96.13470" },
+  { latitude: "16.83300", longitude: "96.13190" },
+  { latitude: "16.83120", longitude: "96.13300" },
+];
+
+/**
  * Creates the account if it is not there, and returns it either way.
  *
  * The obvious "SELECT, and INSERT when it is missing" has a gap between the
@@ -90,7 +104,13 @@ async function seedCampus(log: (message: string) => void) {
     const building = (
       await db()
         .insert(buildings)
-        .values({ code, name: BUILDING_NAMES[code - 1] ?? `Building ${code}`, shortName: `B${code}` })
+        .values({
+          code,
+          name: BUILDING_NAMES[code - 1] ?? `Building ${code}`,
+          shortName: `B${code}`,
+          latitude: BUILDING_PLACES[code - 1]?.latitude ?? null,
+          longitude: BUILDING_PLACES[code - 1]?.longitude ?? null,
+        })
         .onConflictDoNothing()
         .returning()
     )[0];

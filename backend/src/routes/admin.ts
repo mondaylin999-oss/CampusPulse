@@ -110,7 +110,15 @@ adminRouter.post(
 adminRouter.patch(
   "/buildings/:id",
   route(async req => {
-    const input = parseBody(z.object({ name: z.string().min(2).max(120).optional(), shortName: z.string().max(32).nullable().optional() }), req.body);
+    const input = parseBody(
+      z.object({
+        name: z.string().min(2).max(120).optional(),
+        shortName: z.string().max(32).nullable().optional(),
+        latitude: z.number().min(-90).max(90).nullable().optional(),
+        longitude: z.number().min(-180).max(180).nullable().optional(),
+      }),
+      req.body,
+    );
     await updateBuilding(parseId(req.params.id), input);
     return { success: true };
   }),

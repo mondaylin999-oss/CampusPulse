@@ -206,6 +206,9 @@ export const buildings = pgTable("buildings", {
   code: smallint("code").notNull().unique(),
   name: varchar("name", { length: 120 }).notNull(),
   shortName: varchar("short_name", { length: 32 }),
+  /** Where it stands on the campus map. NULL = not placed yet. */
+  latitude: varchar("latitude", { length: 32 }),
+  longitude: varchar("longitude", { length: 32 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

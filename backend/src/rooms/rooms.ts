@@ -82,7 +82,19 @@ export async function listBuildings() {
   const countOf = (buildingCode: number, level: number) =>
     roomCounts.find(row => row.buildingCode === buildingCode && row.floorLevel === level)?.total ?? 0;
 
-  const assembled = new Map<number, { id: number; code: number; name: string; shortName: string | null; roomCount: number; floors: Array<{ id: number; level: number; label: string | null; roomCount: number }> }>();
+  const assembled = new Map<
+    number,
+    {
+      id: number;
+      code: number;
+      name: string;
+      shortName: string | null;
+      latitude: string | null;
+      longitude: string | null;
+      roomCount: number;
+      floors: Array<{ id: number; level: number; label: string | null; roomCount: number }>;
+    }
+  >();
 
   for (const row of rows) {
     const existing = assembled.get(row.building.id) ?? {
@@ -90,6 +102,8 @@ export async function listBuildings() {
       code: row.building.code,
       name: row.building.name,
       shortName: row.building.shortName,
+      latitude: row.building.latitude,
+      longitude: row.building.longitude,
       roomCount: 0,
       floors: [],
     };

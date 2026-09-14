@@ -43,10 +43,18 @@ export async function createBuilding(input: { code: number; name: string; shortN
   return building;
 }
 
-export async function updateBuilding(id: number, input: { name?: string; shortName?: string | null }) {
+export async function updateBuilding(
+  id: number,
+  input: { name?: string; shortName?: string | null; latitude?: number | null; longitude?: number | null },
+) {
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name.trim();
   if (input.shortName !== undefined) patch.shortName = input.shortName?.trim() || null;
+  // Six decimal places is about 11cm — far finer than "which building is
+  // this". A click from a map gives ~15 digits of float noise, which is not
+  // more accurate, only longer and uglier wherever it is displayed.
+  if (input.latitude !== undefined) patch.latitude = input.latitude === null ? null : input.latitude.toFixed(6);
+  if (input.longitude !== undefined) patch.longitude = input.longitude === null ? null : input.longitude.toFixed(6);
   if (!Object.keys(patch).length) return;
   await db().update(buildings).set(patch).where(eq(buildings.id, id));
 }

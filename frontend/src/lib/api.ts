@@ -291,6 +291,9 @@ export type BuildingRow = {
   name: string;
   shortName: string | null;
   roomCount: number;
+  /** Where it stands on the campus map; null until an administrator places it. */
+  latitude: string | null;
+  longitude: string | null;
   /** How many of this building's rooms are free at the moment asked about. */
   availableNow: number;
   floors: Array<{ id: number; level: number; label: string | null; roomCount: number; availableNow: number }>;
