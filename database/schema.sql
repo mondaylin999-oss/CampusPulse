@@ -408,5 +408,5 @@ COMMIT;
 -- Quick check — run this after the script finishes:
 --     SELECT table_name FROM information_schema.tables
 --      WHERE table_schema = 'public' ORDER BY table_name;
--- You should see 17 tables.
+-- You should see 16 tables.
 -- ---------------------------------------------------------------------------
