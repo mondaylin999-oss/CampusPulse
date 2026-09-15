@@ -32,6 +32,18 @@ async function main() {
 }
 
 main().catch(error => {
-  console.error("CampusPulse schema installation failed:", error instanceof Error ? error.message : error);
+  // pg can surface connection failures as AggregateError with an empty top-level
+  // message. Print the useful error fields and nested causes, but never the
+  // connection string because Render logs are retained remotely.
+  const details = (value: unknown): string => {
+    if (!(value instanceof Error)) return String(value);
+
+    const databaseError = value as Error & { code?: string; errors?: unknown[] };
+    const ownMessage = [databaseError.code, databaseError.message].filter(Boolean).join(": ");
+    const causes = databaseError.errors?.map(details).filter(Boolean) ?? [];
+    return [ownMessage, ...causes].filter(Boolean).join(" | ") || value.name;
+  };
+
+  console.error("CampusPulse schema installation failed:", details(error));
   process.exit(1);
 });
