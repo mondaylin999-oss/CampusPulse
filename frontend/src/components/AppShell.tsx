@@ -68,7 +68,7 @@ const ROLE_NAV: Record<Role, NavItem[]> = {
     { href: "/admin/timetable", label: "Timetable Manager", short: "Timetable", icon: <CalendarClock className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/campus", label: "Campus & Rooms", short: "Campus", icon: <Building2 className="h-5 w-5" />, context: "rooms" },
     { href: "/admin/changes", label: "Timetable Changes", short: "Changes", icon: <DoorOpen className="h-5 w-5" />, context: "rooms" },
-    { href: "/admin/people", label: "People & Drivers", short: "People", icon: <Users className="h-5 w-5" /> },
+    { href: "/admin/people", label: "People & Agents", short: "People", icon: <Users className="h-5 w-5" /> },
     { href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> },
   ],
   // Agent who may hold a room. The role came from the bus system's account

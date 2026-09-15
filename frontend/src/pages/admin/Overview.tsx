@@ -8,18 +8,15 @@
 
 import { Link } from "wouter";
 import { Building2, CalendarClock, DoorOpen, Users } from "lucide-react";
-import { api, type CampusPulseSummary, type DriverApplicationRow, type TimetableRow } from "@/lib/api";
+import { api, type CampusPulseSummary, type TimetableRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { useAuth } from "@/lib/auth";
-import { Card, EmptyState, ErrorNote, Notice, PageHeader, Spinner, StatTile } from "@/components/ui";
+import { Card, ErrorNote, Notice, PageHeader, Spinner, StatTile } from "@/components/ui";
 
 export default function AdminOverview() {
   const { health } = useAuth();
   const pulse = useApiData<CampusPulseSummary>(() => api.get("/rooms/pulse"), [], { pollMs: 60_000 });
   const timetable = useApiData<{ entries: TimetableRow[] }>(() => api.get("/admin/timetable"), []);
-  const applications = useApiData<{ applications: DriverApplicationRow[] }>(() => api.get("/admin/driver-applications", { status: "pending" }), []);
-
-  const waiting = applications.data?.applications ?? [];
 
   return (
     <div className="space-y-stack-md">
@@ -27,17 +24,6 @@ export default function AdminOverview() {
 
       {pulse.error ? <ErrorNote message={pulse.error} onRetry={() => void pulse.refresh()} /> : null}
       {pulse.loading && !pulse.data ? <Spinner /> : null}
-
-      {waiting.length ? (
-        <Notice tone="warning">
-          <span className="flex flex-wrap items-center gap-2">
-            {waiting.length} driver permission request{waiting.length === 1 ? "" : "s"} waiting —
-            <Link href="/admin/people" className="font-bold underline">
-              decide now
-            </Link>
-          </span>
-        </Notice>
-      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Rooms available now" value={pulse.data?.available ?? "—"} tone="rooms" icon={<DoorOpen className="h-4 w-4" />} />
@@ -61,7 +47,8 @@ export default function AdminOverview() {
               { href: "/admin/timetable", label: "Timetable manager", hint: "Add, edit and search weekly sessions", icon: <CalendarClock className="h-4 w-4" /> },
               { href: "/admin/changes", label: "Timetable changes", hint: "Cancel, move, retime, holidays, closures", icon: <DoorOpen className="h-4 w-4" /> },
               { href: "/admin/campus", label: "Campus & rooms", hint: "Buildings, floors, rooms, batches, subjects", icon: <Building2 className="h-4 w-4" /> },
-              { href: "/admin/people", label: "People & drivers", hint: "Accounts and driver permission", icon: <Users className="h-4 w-4" /> },
+              { href: "/admin/people", label: "People & agents", hint: "Manage accounts and room-booking agents", icon: <Users className="h-4 w-4" /> },
+              { href: "/admin/bus/route", label: "Transport ways", hint: "Add and update school bus routes", icon: <Users className="h-4 w-4" /> },
             ].map(item => (
               <li key={item.href}>
                 <Link href={item.href} className="flex items-center gap-3 rounded-lg border border-outline-variant px-3 py-2.5 hover:bg-surface-container-low">
@@ -76,23 +63,6 @@ export default function AdminOverview() {
           </ul>
         </Card>
 
-        <Card title="Waiting on the office" subtitle="Driver permission requests.">
-          {applications.loading && !applications.data ? <Spinner /> : null}
-          {waiting.length ? (
-            <ul className="space-y-2">
-              {waiting.map(row => (
-                <li key={row.application.id} className="rounded-lg border border-warning/50 px-3 py-2.5">
-                  <p className="text-[14px] font-semibold text-on-surface">{row.applicantName ?? row.applicantUsername}</p>
-                  <p className="text-[12px] text-on-surface-variant">
-                    {row.application.plateNumber ?? "no plate given"} · {row.application.totalSeats ?? "?"} seats · {row.application.phone ?? "no phone"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState title="Nothing waiting" description="No driver permission requests are open." />
-          )}
-        </Card>
       </div>
     </div>
   );

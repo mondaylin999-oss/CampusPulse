@@ -341,9 +341,17 @@ async function runSeed(options: SeedOptions = {}) {
   };
 
   const admin = await ensureAccount({ username: "admin", name: "University Office", role: "admin" });
-  // Bus operators are managed by the office. They are transport records, not
-  // a fourth authorization role, so the seeded operator is an administrator.
-  const driver = await ensureAccount({ username: "driver", name: "U Aung Aung", role: "admin" });
+  // Move old installations from the former driver account to the university
+  // administrator. Transport is now managed directly by the office.
+  const legacyDriver = await db().select().from(users).where(eq(users.username, "driver")).limit(1);
+  if (legacyDriver[0] && legacyDriver[0].id !== admin.user.id) {
+    const legacyProfile = await db().select().from(driverProfiles).where(eq(driverProfiles.userId, legacyDriver[0].id)).limit(1);
+    await db().update(vehicles).set({ driverId: admin.user.id }).where(eq(vehicles.driverId, legacyDriver[0].id));
+    await db().update(transportRoutes).set({ driverId: admin.user.id }).where(eq(transportRoutes.driverId, legacyDriver[0].id));
+    await db().insert(driverProfiles).values({ userId: admin.user.id, phone: legacyProfile[0]?.phone ?? null }).onConflictDoNothing();
+    await db().delete(driverProfiles).where(eq(driverProfiles.userId, legacyDriver[0].id));
+    await db().delete(users).where(eq(users.id, legacyDriver[0].id));
+  }
   const student = await ensureAccount({ username: "student", name: "Ma Ei Ei", role: "user" });
   // Keep the original seeded account and its bookings while adopting the
   // role's public name. This also upgrades existing production databases.
@@ -353,7 +361,7 @@ async function runSeed(options: SeedOptions = {}) {
   }
   const agent = await ensureAccount({ username: "agent", name: "Daw Khin Khin", role: "agent" });
 
-  if (admin.created || driver.created || student.created || agent.created) {
+  if (admin.created || student.created || agent.created) {
     log("\n  CampusPulse — first run");
     log("  ────────────────────────────────────────────────────────");
     log(`  admin / agent / user accounts      password: ${ENV.seedPassword}`);
@@ -361,7 +369,7 @@ async function runSeed(options: SeedOptions = {}) {
 
   await seedCampus(log);
   await seedTimetable(log);
-  await seedBus(driver.user.id, log);
+  await seedBus(admin.user.id, log);
 
   const counts = {
     rooms: (await db().select({ total: sql<number>`count(*)::int` }).from(rooms))[0]?.total ?? 0,

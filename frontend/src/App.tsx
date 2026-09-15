@@ -38,7 +38,7 @@ import Me from "@/pages/student/Me";
 // ---- agents who may hold a room ----
 import MyBookings from "@/pages/agent/MyBookings";
 
-// ---- driver (carried over from the school-bus system) ----
+// ---- administrator transport management ----
 import BusConsole from "@/pages/driver/BusConsole";
 import RouteEditor from "@/pages/driver/RouteEditor";
 

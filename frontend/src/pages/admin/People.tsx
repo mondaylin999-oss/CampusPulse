@@ -41,102 +41,10 @@ export default function AdminPeople() {
 
   return (
     <div className="space-y-stack-md">
-      <PageHeader title="People & drivers" subtitle="Accounts, who may hold a room, and who is allowed to run a school bus." />
+      <PageHeader title="People & agents" subtitle="Manage administrator, room-booking agent, and student accounts." />
 
       {note ? <Notice tone={note.tone}>{note.text}</Notice> : null}
       {applications.error ? <ErrorNote message={applications.error} onRetry={() => void applications.refresh()} /> : null}
-
-      {/* ---------- the queue ---------- */}
-      <Card
-        title="Driver permission requests"
-        subtitle="Approving one promotes the account and registers the bus."
-        accent={pending.length ? "warning" : undefined}
-      >
-        {applications.loading && !applications.data ? <Spinner /> : null}
-
-        {pending.length ? (
-          <ul className="space-y-3">
-            {pending.map(row => (
-              <li key={row.application.id} className="rounded-lg border border-warning/50 p-3">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold text-on-surface">{row.applicantName ?? row.applicantUsername}</p>
-                    <p className="text-[12px] text-on-surface-variant">
-                      @{row.applicantUsername} · asked {dateTime(row.application.createdAt)}
-                    </p>
-                    <ul className="mt-2 space-y-0.5 text-[13px] text-on-surface-variant">
-                      <li>Bus: {row.application.plateNumber ?? "not given"} · {row.application.totalSeats ?? "?"} seats</li>
-                      <li>Phone: {row.application.phone ?? "not given"} · Licence: {row.application.licenseNumber ?? "not given"}</li>
-                      {row.application.message ? <li className="italic">“{row.application.message}”</li> : null}
-                    </ul>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="bus"
-                      busy={busy === `app-${row.application.id}`}
-                      onClick={() =>
-                        void act(
-                          `app-${row.application.id}`,
-                          () => api.patch(`/admin/driver-applications/${row.application.id}`, { approve: true }),
-                          `${row.applicantName ?? row.applicantUsername} can now run a school bus.`,
-                        )
-                      }
-                    >
-                      <BadgeCheck className="h-4 w-4" /> Approve
-                    </Button>
-                    <Button
-                      variant="danger"
-                      busy={busy === `app-${row.application.id}`}
-                      onClick={() => {
-                        const reason = window.prompt("Why is this being refused? (the applicant sees this)") ?? undefined;
-                        void act(
-                          `app-${row.application.id}`,
-                          () => api.patch(`/admin/driver-applications/${row.application.id}`, { approve: false, note: reason }),
-                          "Request refused.",
-                        );
-                      }}
-                    >
-                      <X className="h-4 w-4" /> Refuse
-                    </Button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title="Nothing waiting" description="No open driver permission requests." />
-        )}
-
-        {decided.length ? (
-          <div className="mt-4 overflow-x-auto">
-            <p className="field-label">Already decided</p>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Applicant</th>
-                  <th>Decision</th>
-                  <th>When</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {decided.map(row => (
-                  <tr key={row.application.id}>
-                    <td>{row.applicantName ?? row.applicantUsername}</td>
-                    <td>
-                      <Badge tone={row.application.status === "approved" ? "rooms" : "error"}>
-                        {row.application.status === "approved" ? "Approved" : "Refused"}
-                      </Badge>
-                    </td>
-                    <td>{dateTime(row.application.decidedAt)}</td>
-                    <td className="text-[13px] text-on-surface-variant">{row.application.decisionNote ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </Card>
 
       {/* ---------- accounts ---------- */}
       <Card title="Create an account" subtitle="For agents and users who cannot register themselves." actions={<UserPlus className="h-5 w-5 text-on-surface-variant" />}>

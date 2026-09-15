@@ -13,7 +13,7 @@ import { Button, ErrorNote, Field, Input } from "@/components/ui";
 
 const DEMO_LOGINS = [
   { username: "admin", label: "Administrator" },
-  { username: "driver", label: "Bus driver" },
+  { username: "agent", label: "Room booking agent" },
   { username: "student", label: "Student" },
 ];
 
@@ -63,7 +63,7 @@ export default function Login() {
 
           <p className="mt-6 max-w-xl text-[16px] leading-relaxed text-on-surface-variant">
             You do not need an account to find an empty classroom or to read the school-bus timetable — that half of the site is
-            open to everyone. Sign in to take a bus seat, run a bus, or manage the university timetable.
+            open to everyone. Administrators sign in to manage transport ways and university timetables; agents sign in to book rooms.
           </p>
 
           <a href="/" className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-on-surface-variant hover:text-on-surface">
