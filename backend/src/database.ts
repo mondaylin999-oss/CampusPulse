@@ -69,6 +69,7 @@ const REQUIRED_TABLES = [
   "subjects",
   "timetable_entries",
   "schedule_exceptions",
+  "room_bookings",
 ] as const;
 
 /** Where this backend is actually looking, in words the message can print. */

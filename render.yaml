@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: campuspulse-api
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm ci && npm run build
+    # Render's pre-deploy command is paid-only. The schema is idempotent, so a
+    # free service installs/upgrades it as part of every process start.
+    startCommand: cd backend && npm run db:init && npm run serve
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CAMPUS_TIMEZONE
+        value: Asia/Yangon
+      - key: CAMPUS_DAY_END_MINUTE
+        value: "1200"
+      - key: SEED_ON_START
+        value: "true"
+      - key: SEED_PASSWORD
+        sync: false
+      - key: SEED_BUILDINGS
+        value: "4"
+      - key: SEED_FLOORS
+        value: "6"
+      - key: SEED_ROOMS_PER_FLOOR
+        value: "6"
+      - key: CAMPUS_ENGINE_REQUIRED
+        value: "false"
+      # Accept the production Vercel site and its preview deployments. The API
+      # carries no cookies; protected calls use an Authorization bearer token.
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://([a-z0-9-]+\.)?vercel\.app$
