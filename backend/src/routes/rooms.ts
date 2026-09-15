@@ -12,6 +12,8 @@
 import { Router } from "express";
 import { getBuildingOverview, getCampusPulse, getRoomBoard, getRoomDetail, getRoomWeek } from "../rooms/rooms.js";
 import { listExceptions } from "../rooms/timetable.js";
+import { listEntries } from "../rooms/timetable.js";
+import { listBatches } from "../rooms/catalog.js";
 import { addDays, campusNow } from "../time.js";
 import { notFound, route } from "../http.js";
 
@@ -43,6 +45,15 @@ roomsRouter.get(
       minute: asNumber(req.query.minute),
     }),
   ),
+);
+
+/** Public class timetable. A cohort is one batch-section, such as Y1-E. */
+roomsRouter.get(
+  "/timetable/classes",
+  route(async req => {
+    const batchId = asNumber(req.query.batchId);
+    return { batches: await listBatches(true), entries: batchId ? await listEntries({ batchId }) : [] };
+  }),
 );
 
 /**

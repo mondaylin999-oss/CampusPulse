@@ -1,196 +1,90 @@
-// ===========================================================================
-//  Timetable.tsx — the public timetable view.
-//
-//  Two things a student wants from a timetable page:
-//    * the whole day for a whole floor, as a grid, so they can see the gaps
-//    * the changes: what is cancelled, moved or added in the next fortnight
-// ===========================================================================
-
-import { useEffect, useState } from "react";
-import { Link } from "wouter";
-import { CalendarClock } from "lucide-react";
-import { api, DAY_NAMES, minutesToClock, type BuildingRow, type ExceptionRow, type RoomBoard } from "@/lib/api";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, MapPin } from "lucide-react";
+import { api, DAY_NAMES, minutesToClock, type BatchRow, type ExceptionRow, type TimetableRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
-import { Badge, Card, EmptyState, ErrorNote, Notice, PageHeader, Select, Spinner } from "@/components/ui";
+import { Badge, Card, EmptyState, ErrorNote, PageHeader, Select, Spinner } from "@/components/ui";
 
-/** The teaching day the grid draws, in whole hours. */
-const FIRST_HOUR = 7;
-const LAST_HOUR = 20;
-const HOURS = Array.from({ length: LAST_HOUR - FIRST_HOUR }, (_unused, index) => FIRST_HOUR + index);
+const PERIODS = [
+  { start: 510, label: "8:30–9:30" }, { start: 580, label: "9:40–10:40" },
+  { start: 650, label: "10:50–11:50" }, { start: 760, label: "12:40–1:40" },
+  { start: 830, label: "1:50–2:50" }, { start: 900, label: "3:00–4:00" },
+] as const;
+const YEARS = ["First", "Second", "Third", "Fourth", "Fifth"];
+const SECTIONS = ["A", "B", "C", "D", "E"];
 
 const KIND_LABEL: Record<ExceptionRow["exception"]["kind"], string> = {
-  cancel: "Cancelled",
-  move_room: "Room changed",
-  retime: "Time changed",
-  extra: "Extra class",
-  holiday: "Holiday",
-  room_closed: "Room closed",
+  cancel: "Cancelled", move_room: "Room changed", retime: "Time changed", extra: "Extra class", holiday: "Holiday", room_closed: "Room closed",
 };
-
 const KIND_TONE: Record<ExceptionRow["exception"]["kind"], "rooms" | "bus" | "warning" | "error" | "neutral"> = {
-  cancel: "rooms",
-  move_room: "bus",
-  retime: "warning",
-  extra: "bus",
-  holiday: "warning",
-  room_closed: "error",
+  cancel: "rooms", move_room: "bus", retime: "warning", extra: "bus", holiday: "warning", room_closed: "error",
 };
+type SchedulePayload = { batches: BatchRow[]; entries: TimetableRow[] };
 
 export default function Timetable() {
-  const buildings = useApiData<{ buildings: BuildingRow[] }>(() => api.get("/rooms/buildings"), []);
-  const [building, setBuilding] = useState("");
-  const [floor, setFloor] = useState("");
-  const [date, setDate] = useState("");
-
-  useEffect(() => {
-    if (!building && buildings.data?.buildings.length) setBuilding(String(buildings.data.buildings[0]!.code));
-  }, [buildings.data, building]);
-
-  const board = useApiData<RoomBoard>(
-    () => api.get<RoomBoard>("/rooms", { building: building || undefined, floor: floor || undefined, date: date || undefined }),
-    [building, floor, date],
-  );
+  const [year, setYear] = useState("1");
+  const [section, setSection] = useState("E");
+  const catalog = useApiData<SchedulePayload>(() => api.get("/rooms/timetable/classes"), []);
+  const selected = catalog.data?.batches.find(batch => batch.code === `Y${year}-${section}`);
+  const schedule = useApiData<SchedulePayload>(() => api.get("/rooms/timetable/classes", { batchId: selected?.id }), [selected?.id]);
   const changes = useApiData<{ from: string; to: string; exceptions: ExceptionRow[] }>(() => api.get("/rooms/changes/upcoming"), []);
 
-  const floors = buildings.data?.buildings.find(row => String(row.code) === building)?.floors ?? [];
-  const rooms = board.data?.rooms ?? [];
+  useEffect(() => {
+    if (!selected && catalog.data?.batches.length) {
+      const match = /^Y(\d)-([A-E])$/.exec(catalog.data.batches[0]!.code);
+      if (match) { setYear(match[1]!); setSection(match[2]!); }
+    }
+  }, [catalog.data, selected]);
+
+  const bySlot = useMemo(() => {
+    const map = new Map<string, TimetableRow>();
+    for (const row of schedule.data?.entries ?? []) map.set(`${row.entry.dayOfWeek}-${row.entry.startMinute}`, row);
+    return map;
+  }, [schedule.data]);
 
   return (
     <div className="space-y-stack-md">
-      <PageHeader
-        title="Timetable"
-        subtitle={board.data ? `${board.data.moment.dateLabel} — ${DAY_NAMES[board.data.moment.dayOfWeek]}` : "Loading…"}
-      />
-
-      <Card title="Choose a floor and a day">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block">
-            <span className="field-label">Building</span>
-            <Select
-              value={building}
-              onChange={event => {
-                setBuilding(event.target.value);
-                setFloor("");
-              }}
-            >
-              {(buildings.data?.buildings ?? []).map(row => (
-                <option key={row.id} value={row.code}>
-                  {row.code} — {row.name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block">
-            <span className="field-label">Floor</span>
-            <Select value={floor} onChange={event => setFloor(event.target.value)}>
-              <option value="">All floors</option>
-              {floors.map(row => (
-                <option key={row.id} value={row.level}>
-                  Floor {row.level}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block">
-            <span className="field-label">Date</span>
-            <input className="input" type="date" value={date} onChange={event => setDate(event.target.value)} />
-          </label>
+      <PageHeader title="Class timetable" subtitle="Choose your batch and section to see the complete weekly schedule." />
+      <Card title="Choose your class">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label><span className="field-label">Batch</span><Select value={year} onChange={event => setYear(event.target.value)}>{YEARS.map((name, i) => <option key={name} value={i + 1}>{name} Year</option>)}</Select></label>
+          <label><span className="field-label">Section</span><Select value={section} onChange={event => setSection(event.target.value)}>{SECTIONS.map(value => <option key={value} value={value}>Section {value}</option>)}</Select></label>
         </div>
       </Card>
 
-      {board.data?.holiday ? <Notice tone="warning">University holiday — {board.data.holiday.reason}. No classes are scheduled.</Notice> : null}
-      {board.error ? <ErrorNote message={board.error} onRetry={() => void board.refresh()} /> : null}
-      {board.loading && !board.data ? <Spinner label="Building the grid…" /> : null}
+      {catalog.error || schedule.error ? <ErrorNote message={catalog.error ?? schedule.error ?? "Could not load timetable."} onRetry={() => { void catalog.refresh(); void schedule.refresh(); }} /> : null}
+      {(catalog.loading || schedule.loading) && !schedule.data ? <Spinner label="Loading class timetable…" /> : null}
 
-      {/* ---------- the day grid ----------
-          One row per room, one column per hour. A block is drawn from its own
-          start and end minutes, so a 09:00-10:30 class really is one and a
-          half columns wide rather than being rounded to the hour. */}
-      {board.data && rooms.length ? (
-        <Card title="The whole day, room by room" subtitle="Scroll sideways on a phone — the times stay aligned.">
+      {selected ? (
+        <Card title={selected.name} subtitle="Monday–Friday · six university periods">
           <div className="overflow-x-auto">
-            <div className="min-w-[720px]">
-              <div className="flex border-b border-outline-variant pb-1">
-                <div className="w-16 shrink-0 text-label font-semibold uppercase tracking-wider text-on-surface-variant">Room</div>
-                <div className="relative flex-1">
-                  <div className="flex">
-                    {HOURS.map(hour => (
-                      <div key={hour} className="tabular flex-1 text-center text-[11px] font-semibold text-on-surface-variant">
-                        {minutesToClock(hour * 60)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <ul>
-                {rooms.map(room => (
-                  <li key={room.id} className="flex items-center border-b border-surface-container-high py-1.5">
-                    <Link href={`/rooms/${room.roomNumber}`} className="tabular w-16 shrink-0 text-[13px] font-bold text-on-surface hover:underline">
-                      {room.roomNumber}
-                    </Link>
-                    <div className="relative h-7 flex-1 rounded bg-surface-container-low">
-                      {room.availability.sessions.map(session => {
-                        const spanMinutes = (LAST_HOUR - FIRST_HOUR) * 60;
-                        const left = ((session.startMinute - FIRST_HOUR * 60) / spanMinutes) * 100;
-                        const width = ((session.endMinute - session.startMinute) / spanMinutes) * 100;
-                        if (left > 100 || left + width < 0) return null; // outside the drawn day
-                        return (
-                          <span
-                            key={`${session.entryId ?? "x"}-${session.exceptionId ?? "x"}-${session.startMinute}`}
-                            className={`absolute top-0 flex h-7 items-center overflow-hidden rounded px-1.5 text-[10px] font-semibold ${
-                              session.origin === "closure"
-                                ? "bg-surface-container-highest text-on-surface-variant"
-                                : session.origin === "timetable"
-                                  ? "bg-error-container text-on-error-container"
-                                  : "bg-warning-container text-on-warning-container"
-                            }`}
-                            style={{ left: `${Math.max(0, left)}%`, width: `${Math.min(100 - Math.max(0, left), width)}%` }}
-                            title={`${session.startTime}–${session.endTime} ${session.label}`}
-                          >
-                            <span className="truncate">{session.label}</span>
-                          </span>
-                        );
-                      })}
+            <table className="data-table min-w-[1050px] table-fixed">
+              <thead><tr><th className="w-28">Day</th>{PERIODS.map((period, i) => <th key={period.start} className="text-center"><span className="block">Period {i + 1}</span><span className="tabular text-[11px] font-normal">{period.label}</span></th>)}</tr></thead>
+              <tbody>{[1, 2, 3, 4, 5].map(day => (
+                <tr key={day}><th className="text-left">{DAY_NAMES[day]}</th>{PERIODS.map(period => {
+                  const row = bySlot.get(`${day}-${period.start}`);
+                  return <td key={period.start} className="h-28 align-top text-center">{row ? (
+                    <div className="space-y-1 rounded-lg bg-primary-container/60 p-2 text-on-primary-container">
+                      <p className="font-bold">{row.subjectCode ?? "Class"}{row.entry.title ? ` (${row.entry.title})` : ""}</p>
+                      {row.subjectName ? <p className="text-[11px] leading-tight">{row.subjectName}</p> : null}
+                      <p className="inline-flex items-center gap-1 font-semibold"><MapPin className="h-3 w-3" />Room {row.roomNumber}</p>
+                      {row.entry.teacher ? <p className="text-[11px]">{row.entry.teacher}</p> : null}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  ) : <span className="text-on-surface-variant">—</span>}</td>;
+                })}</tr>
+              ))}</tbody>
+            </table>
           </div>
         </Card>
-      ) : null}
+      ) : catalog.data ? <EmptyState title="Class not found" description="This batch and section have not been configured." /> : null}
 
-      {board.data && !rooms.length ? <EmptyState title="No rooms to show" description="Choose another building or floor." /> : null}
-
-      {/* ---------- upcoming changes ---------- */}
-      <Card
-        title="Changes in the next two weeks"
-        subtitle="Cancellations, room changes and holidays the office has published."
-        actions={<CalendarClock className="h-5 w-5 text-on-surface-variant" />}
-      >
+      <Card title="Changes in the next two weeks" subtitle="Cancellations, room changes and holidays published by the office." actions={<CalendarClock className="h-5 w-5 text-on-surface-variant" />}>
         {changes.loading && !changes.data ? <Spinner /> : null}
-        {changes.data?.exceptions.length ? (
-          <ul className="space-y-2">
-            {changes.data.exceptions.map(row => (
-              <li key={row.exception.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-outline-variant px-3 py-2.5">
-                <span className="tabular text-[13px] font-semibold text-on-surface">{row.exception.onDate}</span>
-                <Badge tone={KIND_TONE[row.exception.kind]}>{KIND_LABEL[row.exception.kind]}</Badge>
-                <span className="min-w-0 flex-1 text-[13px] text-on-surface-variant">
-                  {row.roomNumber ? `Room ${row.roomNumber}` : null}
-                  {row.newRoomNumber ? ` → Room ${row.newRoomNumber}` : null}
-                  {row.batchName ? ` · ${row.batchName}` : null}
-                  {row.exception.startMinute !== null && row.exception.endMinute !== null
-                    ? ` · ${minutesToClock(row.exception.startMinute)}–${minutesToClock(row.exception.endMinute)}`
-                    : null}
-                  {row.exception.reason ? ` — ${row.exception.reason}` : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title="No changes published" description="The normal weekly timetable applies." />
-        )}
+        {changes.data?.exceptions.length ? <ul className="space-y-2">{changes.data.exceptions.map(row => (
+          <li key={row.exception.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-outline-variant px-3 py-2.5">
+            <span className="tabular text-[13px] font-semibold">{row.exception.onDate}</span><Badge tone={KIND_TONE[row.exception.kind]}>{KIND_LABEL[row.exception.kind]}</Badge>
+            <span className="text-[13px] text-on-surface-variant">{row.roomNumber ? `Room ${row.roomNumber}` : ""}{row.newRoomNumber ? ` → Room ${row.newRoomNumber}` : ""}{row.batchName ? ` · ${row.batchName}` : ""}{row.exception.startMinute !== null && row.exception.endMinute !== null ? ` · ${minutesToClock(row.exception.startMinute)}–${minutesToClock(row.exception.endMinute)}` : ""}{row.exception.reason ? ` — ${row.exception.reason}` : ""}</span>
+          </li>
+        ))}</ul> : <EmptyState title="No changes published" description="The normal weekly timetable applies." />}
       </Card>
     </div>
   );
