@@ -42,7 +42,7 @@ import { roomNumberFor } from "./rooms/catalog.js";
 
 type SeedOptions = { quiet?: boolean };
 
-const BUILDING_NAMES = ["Main Building", "Engineering Block", "Science Block", "Library & Arts Block", "Annex"];
+const BUILDING_NAMES = ["Building 1", "Building 2", "Building 3", "Building 4"];
 
 /**
  * Where the demo buildings stand, so the campus map has something on it the
@@ -97,7 +97,17 @@ async function ensureAccount(input: { username: string; name: string; role: Role
 /** The 4 x 6 x 6 campus. Rooms are numbered by the rule, never by hand. */
 async function seedCampus(log: (message: string) => void) {
   const existingRooms = (await db().select({ total: sql<number>`count(*)::int` }).from(rooms))[0]?.total ?? 0;
-  if (existingRooms > 0) return;
+  if (existingRooms > 0) {
+    // Keep an already-seeded production campus aligned with the canonical
+    // building labels without replacing rooms or administrator-managed data.
+    for (let code = 1; code <= 4; code += 1) {
+      await db()
+        .update(buildings)
+        .set({ name: `Building ${code}` })
+        .where(eq(buildings.code, code));
+    }
+    return;
+  }
 
   log(`  campus       ${ENV.seedBuildings} buildings x ${ENV.seedFloors} floors x ${ENV.seedRoomsPerFloor} rooms`);
 
