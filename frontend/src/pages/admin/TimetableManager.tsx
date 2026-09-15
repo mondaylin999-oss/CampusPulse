@@ -31,6 +31,7 @@ type GridCell = { roomId: string; subjectId: string; title: string; teacher: str
 function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; subjects: SubjectRow[]; rooms: AdminRoom[] }) {
   const [batchId, setBatchId] = useState("");
   const timetable = useApiData<{ entries: TimetableRow[] }>(() => api.get("/admin/timetable", { batchId: batchId || undefined }), [batchId]);
+  const allTimetables = useApiData<{ entries: TimetableRow[] }>(() => api.get("/admin/timetable"), []);
   const [cells, setCells] = useState<Record<string, GridCell>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -75,7 +76,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
         if (old) await api.patch(`/admin/timetable/${old.entry.id}`, body); else await api.post("/admin/timetable", body);
       }
       setMessage({ tone: "rooms", text: `Saved ${dirty.size} changed cell${dirty.size === 1 ? "" : "s"}.` });
-      await timetable.refresh();
+      await Promise.all([timetable.refresh(), allTimetables.refresh()]);
     } catch (caught) {
       setMessage({ tone: "error", text: caught instanceof ApiError ? caught.message : "Could not save the timetable." });
       await timetable.refresh();
@@ -102,6 +103,39 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
       })}</tr>)}</tbody>
     </table></div>
     <p className="mt-3 text-[12px] text-on-surface-variant">To clear a class, choose “Empty” or clear its room, then save. Room and class conflicts are checked by the server.</p>
+
+    <div className="mt-5 border-t border-outline-variant pt-4">
+      <h3 className="text-[15px] font-semibold text-on-surface">Sections with a timetable</h3>
+      <p className="mt-0.5 text-[12px] text-on-surface-variant">Select a section above to view or change its schedule.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {batches
+          .map(batch => ({
+            batch,
+            count: (allTimetables.data?.entries ?? []).filter(row => row.entry.batchId === batch.id).length,
+          }))
+          .filter(row => row.count > 0)
+          .map(({ batch, count }) => (
+            <button
+              key={batch.id}
+              type="button"
+              onClick={() => setBatchId(String(batch.id))}
+              className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                String(batch.id) === batchId
+                  ? "border-primary bg-primary text-on-primary"
+                  : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container-high"
+              }`}
+            >
+              <span className="block text-[13px] font-semibold">{batch.code} — {batch.name}</span>
+              <span className={`block text-[11px] ${String(batch.id) === batchId ? "text-on-primary/80" : "text-on-surface-variant"}`}>
+                {count} session{count === 1 ? "" : "s"}
+              </span>
+            </button>
+          ))}
+        {allTimetables.data && !allTimetables.data.entries.length ? (
+          <p className="text-[13px] text-on-surface-variant">No section has a timetable yet.</p>
+        ) : null}
+      </div>
+    </div>
   </Card>;
 }
 
