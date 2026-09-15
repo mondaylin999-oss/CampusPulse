@@ -1,6 +1,6 @@
 // ===========================================================================
 //  Login.tsx — the way into all four portals.
-//  Students can also create their own account here; staff accounts (agent,
+//  Students can also create their own account here; agent accounts (agent,
 //  transport agent, admin) are created by the administrator.
 // ===========================================================================
 

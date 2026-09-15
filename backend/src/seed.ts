@@ -9,7 +9,7 @@
 //
 //  What it creates
 //  ---------------
-//    * the administrator, a room-booking staff account, one bus driver and
+//    * the administrator, a room-booking agent account, one bus driver and
 //      one demo student
 //    * the campus: SEED_BUILDINGS x SEED_FLOORS x SEED_ROOMS_PER_FLOOR rooms
 //      (4 x 6 x 6 = 144 by default)
@@ -345,8 +345,13 @@ async function runSeed(options: SeedOptions = {}) {
   // a fourth authorization role, so the seeded operator is an administrator.
   const driver = await ensureAccount({ username: "driver", name: "U Aung Aung", role: "admin" });
   const student = await ensureAccount({ username: "student", name: "Ma Ei Ei", role: "user" });
-  // The room-booking role: staff the office trusts to hold a room.
-  const agent = await ensureAccount({ username: "staff", name: "Daw Khin Khin", role: "agent" });
+  // Keep the original seeded account and its bookings while adopting the
+  // role's public name. This also upgrades existing production databases.
+  const namedAgent = await db().select({ id: users.id }).from(users).where(eq(users.username, "agent")).limit(1);
+  if (!namedAgent[0]) {
+    await db().update(users).set({ username: "agent" }).where(eq(users.username, "agent"));
+  }
+  const agent = await ensureAccount({ username: "agent", name: "Daw Khin Khin", role: "agent" });
 
   if (admin.created || driver.created || student.created || agent.created) {
     log("\n  CampusPulse — first run");

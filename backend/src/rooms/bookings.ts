@@ -1,8 +1,8 @@
 // ===========================================================================
-//  bookings.ts — a member of staff holds a room for a few hours.
+//  bookings.ts — a member of agent holds a room for a few hours.
 //
 //  WHO MAY BOOK. Not the public, and not students. Booking belongs to the
-//  `agent` role — departmental staff, society officers, lab technicians —
+//  `agent` role — departmental agent, society officers, lab technicians —
 //  granted by the administrator in People & Drivers. Everyone else can SEE a
 //  booking, because it makes the room busy, but cannot make one.
 //

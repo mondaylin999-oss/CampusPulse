@@ -139,7 +139,7 @@ export default function AdminPeople() {
       </Card>
 
       {/* ---------- accounts ---------- */}
-      <Card title="Create an account" subtitle="For staff who cannot register themselves." actions={<UserPlus className="h-5 w-5 text-on-surface-variant" />}>
+      <Card title="Create an account" subtitle="For agents and users who cannot register themselves." actions={<UserPlus className="h-5 w-5 text-on-surface-variant" />}>
         <form
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
           onSubmit={event => {
@@ -173,7 +173,7 @@ export default function AdminPeople() {
           <Field label="Role">
             <Select value={form.role} onChange={event => setForm({ ...form, role: event.target.value })}>
               <option value="user">Student</option>
-              <option value="agent">Staff — may book rooms</option>
+              <option value="agent">Agent — may book rooms</option>
               <option value="admin">Administrator</option>
             </Select>
           </Field>
@@ -192,7 +192,7 @@ export default function AdminPeople() {
         ? (
             [
               { title: "Administrators", rows: people.data.admins, kind: "admin" as const },
-              { title: "Staff who may book rooms", rows: people.data.agents, kind: "agent" as const },
+              { title: "Agents who may book rooms", rows: people.data.agents, kind: "agent" as const },
               { title: "Students", rows: people.data.students, kind: "user" as const },
             ] as const
           ).map(group => (

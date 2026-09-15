@@ -6,8 +6,8 @@
 //  one answer to "may I book?" and the button can never offer something the
 //  API would refuse:
 //
-//     staff (agent) / office   the form
-//     signed in, not staff     an explanation of who may book
+//     agent (agent) / office   the form
+//     signed in, not agent     an explanation of who may book
 //     signed out               the same, plus a way to log in
 //
 //  The form asks for a start time and a NUMBER OF HOURS rather than an end
@@ -45,14 +45,14 @@ export function BookRoom({ room, moment, onBooked }: { room: RoomDetail["room"];
   // ---- not allowed: explain, never show a button that would fail ----------
   if (!rules.data.mayBook) {
     return (
-      <Card title="Need this room?" subtitle="Booking is for university staff.">
+      <Card title="Need this room?" subtitle="Booking is for university agents.">
         <p className="text-[14px] leading-relaxed text-on-surface-variant">
-          Rooms are held by staff accounts — departmental offices, society officers and lab technicians. Everyone else is welcome
+          Rooms are held by agent accounts — departmental offices, society officers and lab technicians. Everyone else is welcome
           to use any room the board shows as free; there is nothing to book.
         </p>
         {!rules.data.signedIn ? (
           <Link href="/login" className="btn btn-ghost mt-3">
-            <LogIn className="h-4 w-4" /> Staff log in
+            <LogIn className="h-4 w-4" /> Agent log in
           </Link>
         ) : (
           <p className="mt-3 flex items-start gap-2 text-[13px] text-on-surface-variant">
@@ -135,7 +135,7 @@ export function BookRoom({ room, moment, onBooked }: { room: RoomDetail["room"];
             <Input
               value={form.purpose}
               onChange={event => setForm({ ...form, purpose: event.target.value })}
-              placeholder="Staff meeting, society rehearsal, make-up class…"
+              placeholder="Agent meeting, society rehearsal, make-up class…"
               maxLength={160}
             />
           </Field>

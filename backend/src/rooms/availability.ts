@@ -63,7 +63,7 @@ export type ExceptionRow = {
   reason: string | null;
 };
 
-/** A room held by a member of staff for part of one date. */
+/** A room held by a member of agent for part of one date. */
 export type BookingRow = {
   id: number;
   roomId: number;
@@ -170,7 +170,7 @@ export function effectiveSessionsForDate(input: {
   dayOfWeek: number;
   entries: WeeklyEntry[];
   exceptions: ExceptionRow[];
-  /** Rooms held by staff on this date. They occupy a room like a class does. */
+  /** Rooms held by agent on this date. They occupy a room like a class does. */
   bookings?: BookingRow[];
 }): Map<number, EffectiveSession[]> {
   const { dateKey, dayOfWeek, entries, exceptions } = input;
@@ -279,7 +279,7 @@ export function effectiveSessionsForDate(input: {
     }
   }
 
-  // ---- rooms held by staff ------------------------------------------------
+  // ---- rooms held by agent ------------------------------------------------
   // A holiday does NOT clear these: somebody deliberately booked the room for
   // that date, which is exactly when a quiet campus is useful.
   for (const booking of bookings) {

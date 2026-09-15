@@ -1,5 +1,5 @@
 // ===========================================================================
-//  staff/MyBookings.tsx — the rooms this account is holding.
+//  agent/MyBookings.tsx — the rooms this account is holding.
 //
 //  For an agent these are their own; for the administrator it is every
 //  upcoming booking on the campus, because the office needs to be able to free

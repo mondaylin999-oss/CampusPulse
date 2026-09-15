@@ -50,7 +50,7 @@ const registration = z.object({
   password: z.string().min(6).max(128),
 });
 
-/** Student self-registration. Staff accounts are created by the admin. */
+/** Student self-registration. Agent accounts are created by the admin. */
 authRouter.post(
   "/register",
   route(async req => {

@@ -11,7 +11,7 @@
 //      the student is walking around campus, which is the whole use case
 //
 //  PUBLIC items are always present. Role items are appended for whoever is
-//  signed in; a signed-out visitor sees a "Staff login" button instead.
+//  signed in; a signed-out visitor sees a "Agent login" button instead.
 // ===========================================================================
 
 import { useMemo, useState, type ReactNode } from "react";
@@ -71,7 +71,7 @@ const ROLE_NAV: Record<Role, NavItem[]> = {
     { href: "/admin/people", label: "People & Drivers", short: "People", icon: <Users className="h-5 w-5" /> },
     { href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> },
   ],
-  // Staff who may hold a room. The role came from the bus system's account
+  // Agent who may hold a room. The role came from the bus system's account
   // table unused; on this platform it is the room-booking privilege.
   agent: [
     { href: "/agent", label: "My Bookings", short: "Bookings", icon: <CalendarCheck className="h-5 w-5" />, context: "rooms" },
@@ -81,7 +81,7 @@ const ROLE_NAV: Record<Role, NavItem[]> = {
 
 const ROLE_LABEL: Record<Role, string> = {
   user: "Student",
-  agent: "Staff (room booking)",
+  agent: "Agent (room booking)",
   admin: "Administrator",
 };
 
@@ -216,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           ) : (
             <Link href="/login" className="btn btn-ghost w-full">
-              <ShieldCheck className="h-4 w-4" /> {t("Staff login")}
+              <ShieldCheck className="h-4 w-4" /> {t("Agent login")}
             </Link>
           )}
         </div>

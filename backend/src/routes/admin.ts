@@ -413,7 +413,7 @@ adminRouter.get(
   "/people",
   route(async () => ({
     admins: await listUsersByRole("admin"),
-    /** The room-booking staff. */
+    /** The room-booking agent. */
     agents: await listUsersByRole("agent"),
     students: await listUsersByRole("user"),
   })),

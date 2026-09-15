@@ -44,7 +44,7 @@ const MAY_BOOK = ["agent", "admin"] as const;
 function requireBooker(req: Parameters<typeof requireUser>[0]) {
   const user = requireUser(req);
   if (!MAY_BOOK.includes(user.role as (typeof MAY_BOOK)[number]))
-    throw forbidden("Booking a room is for university staff. Ask the office if you need this.");
+    throw forbidden("Booking a room is for university agents. Ask the office if you need this.");
   return user;
 }
 

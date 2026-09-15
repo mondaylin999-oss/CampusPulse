@@ -162,9 +162,9 @@ describe("exceptions", () => {
   });
 });
 
-describe("rooms held by staff", () => {
+describe("rooms held by agent", () => {
   const booking = (over: Partial<BookingRow> & { id: number; roomId: number; startMinute: number; endMinute: number }): BookingRow => ({
-    purpose: "Staff meeting",
+    purpose: "Agent meeting",
     bookedByName: "Daw Khin",
     ...over,
   });
@@ -177,7 +177,7 @@ describe("rooms held by staff", () => {
     const status = roomAvailabilityAt(sessions, 11 * 60 + 20);
     expect(status.status).toBe("occupied");
     expect(status.current?.origin).toBe("booking");
-    expect(status.current?.label).toBe("Staff meeting");
+    expect(status.current?.label).toBe("Agent meeting");
   });
 
   it("a booking butting onto a class extends when the room frees up", () => {

@@ -225,7 +225,7 @@ async function loadExceptions(dateKey: string): Promise<ExceptionRow[]> {
   }));
 }
 
-/** Rooms held by staff on this date. Cancelled ones hold nothing. */
+/** Rooms held by agent on this date. Cancelled ones hold nothing. */
 async function loadBookings(dateKey: string): Promise<BookingRow[]> {
   return db()
     .select({
