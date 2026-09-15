@@ -36,7 +36,23 @@ BEGIN;
 --    Postgres enums are strict: a bad value is rejected by the database, not
 --    only by the application. DO-blocks make the CREATE re-runnable.
 -- ---------------------------------------------------------------------------
-DO $$ BEGIN CREATE TYPE user_role            AS ENUM ('admin', 'agent', 'user', 'driver');          EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE user_role            AS ENUM ('admin', 'agent', 'user');                    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Older CampusPulse databases had a fourth `driver` authorization role.
+-- Bus operation now belongs to administrators. Rebuild that enum in place and
+-- preserve every account by promoting legacy driver accounts to admin.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid = e.enumtypid WHERE t.typname = 'user_role' AND e.enumlabel = 'driver') THEN
+    ALTER TYPE user_role RENAME TO user_role_with_driver;
+    CREATE TYPE user_role AS ENUM ('admin', 'agent', 'user');
+    ALTER TABLE users ALTER COLUMN role DROP DEFAULT;
+    ALTER TABLE users ALTER COLUMN role TYPE user_role
+      USING (CASE WHEN role::text = 'driver' THEN 'admin' ELSE role::text END)::user_role;
+    ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user'::user_role;
+    DROP TYPE user_role_with_driver;
+  END IF;
+END $$;
 DO $$ BEGIN CREATE TYPE account_status       AS ENUM ('active', 'inactive');                        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE vehicle_status       AS ENUM ('operational', 'unavailable', 'maintenance'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE maintenance_flag     AS ENUM ('clear', 'reported', 'in_service');           EXCEPTION WHEN duplicate_object THEN NULL; END $$;

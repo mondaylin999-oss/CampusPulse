@@ -160,7 +160,7 @@ export async function listDrivers() {
     })
     .from(users)
     .leftJoin(driverProfiles, eq(users.id, driverProfiles.userId))
-    .where(eq(users.role, "driver"))
+    .where(eq(users.role, "admin"))
     .orderBy(asc(users.name));
 }
 
@@ -172,7 +172,7 @@ export async function assertActiveDriver(driverId: number) {
     .where(eq(users.id, driverId))
     .limit(1);
   const driver = rows[0];
-  if (!driver || driver.role !== "driver" || driver.status !== "active") fail("Choose an active driver account.");
+  if (!driver || driver.role !== "admin" || driver.status !== "active") fail("Choose an active driver account.");
   if (driver!.availability === "unavailable") fail("The selected driver is unavailable.");
   return driver!;
 }

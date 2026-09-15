@@ -17,7 +17,7 @@
 import { boolean, date, index, integer, pgEnum, pgTable, serial, smallint, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 // --- enums -----------------------------------------------------------------
-export const userRole = pgEnum("user_role", ["admin", "agent", "user", "driver"]);
+export const userRole = pgEnum("user_role", ["admin", "agent", "user"]);
 export const accountStatus = pgEnum("account_status", ["active", "inactive"]);
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "approved", "rejected"]);
 export const vehicleStatusEnum = pgEnum("vehicle_status", ["operational", "unavailable", "maintenance"]);

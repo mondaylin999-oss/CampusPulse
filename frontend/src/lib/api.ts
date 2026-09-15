@@ -188,7 +188,7 @@ export const api = {
 //  Shared response types
 // ===========================================================================
 
-export type Role = "admin" | "agent" | "user" | "driver";
+export type Role = "admin" | "agent" | "user";
 
 export type SessionUser = {
   id: number;

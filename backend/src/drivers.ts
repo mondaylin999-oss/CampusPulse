@@ -27,7 +27,8 @@ export type ApplicationInput = {
 export async function applyForDriverPermission(userId: number, input: ApplicationInput) {
   const account = (await db().select().from(users).where(eq(users.id, userId)).limit(1))[0];
   if (!account) throw notFound("Account not found.");
-  if (account.role === "driver") throw badRequest("You already run a school bus.");
+  const existingProfile = await db().select().from(driverProfiles).where(eq(driverProfiles.userId, userId)).limit(1);
+  if (existingProfile[0]) throw badRequest("You already run a school bus.");
   if (account.role === "admin") throw badRequest("An administrator account cannot also be a driver.");
 
   const open = await db()
@@ -101,7 +102,7 @@ export async function decideApplication(input: {
 
   if (!input.approve) return { promoted: false };
 
-  await db().update(users).set({ role: "driver", status: "active" }).where(eq(users.id, application.userId));
+  await db().update(users).set({ status: "active" }).where(eq(users.id, application.userId));
 
   // The profile and the bus are created only if they are not there already, so
   // a re-approval after a demotion does not fail on the unique keys.
@@ -131,12 +132,13 @@ export async function decideApplication(input: {
 export async function revokeDriver(userId: number) {
   const account = (await db().select().from(users).where(eq(users.id, userId)).limit(1))[0];
   if (!account) throw notFound("Account not found.");
-  if (account.role !== "driver") throw badRequest("That account is not a driver.");
+  const profile = await db().select().from(driverProfiles).where(eq(driverProfiles.userId, userId)).limit(1);
+  if (!profile[0]) throw badRequest("That account is not a bus operator.");
 
   // The bus, its routes and the seats students already hold are left alone on
   // purpose — they are records of what happened, and deleting them would take
   // a student's seat away without telling anyone. The account simply loses the
   // driver screens; the office can reassign the bus.
-  await db().update(users).set({ role: "user" }).where(eq(users.id, userId));
+  await db().update(driverProfiles).set({ availability: "unavailable" }).where(eq(driverProfiles.userId, userId));
   return { revoked: true };
 }

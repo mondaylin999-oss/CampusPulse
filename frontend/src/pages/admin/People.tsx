@@ -7,13 +7,13 @@
 // ===========================================================================
 
 import { useState } from "react";
-import { BadgeCheck, KeyRound, Plus, ShieldOff, UserPlus, X } from "lucide-react";
+import { BadgeCheck, KeyRound, Plus, UserPlus, X } from "lucide-react";
 import { api, ApiError, type DriverApplicationRow, type SessionUser } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { dateTime } from "@/lib/format";
 import { Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner, StatusBadge } from "@/components/ui";
 
-type People = { admins: SessionUser[]; agents: SessionUser[]; drivers: SessionUser[]; students: SessionUser[] };
+type People = { admins: SessionUser[]; agents: SessionUser[]; students: SessionUser[] };
 
 export default function AdminPeople() {
   const people = useApiData<People>(() => api.get("/admin/people"), []);
@@ -174,7 +174,6 @@ export default function AdminPeople() {
             <Select value={form.role} onChange={event => setForm({ ...form, role: event.target.value })}>
               <option value="user">Student</option>
               <option value="agent">Staff — may book rooms</option>
-              <option value="driver">Bus driver</option>
               <option value="admin">Administrator</option>
             </Select>
           </Field>
@@ -194,7 +193,6 @@ export default function AdminPeople() {
             [
               { title: "Administrators", rows: people.data.admins, kind: "admin" as const },
               { title: "Staff who may book rooms", rows: people.data.agents, kind: "agent" as const },
-              { title: "Bus drivers", rows: people.data.drivers, kind: "driver" as const },
               { title: "Students", rows: people.data.students, kind: "user" as const },
             ] as const
           ).map(group => (
@@ -246,19 +244,6 @@ export default function AdminPeople() {
                               >
                                 {row.status === "active" ? "Disable" : "Enable"}
                               </button>
-                              {group.kind === "driver" ? (
-                                <button
-                                  className="rounded p-2 text-error hover:bg-error-container"
-                                  title="Take driver permission back"
-                                  aria-label="Revoke driver permission"
-                                  onClick={() => {
-                                    if (!window.confirm(`Take driver permission back from ${row.name ?? row.username}? Their bus and its routes are kept.`)) return;
-                                    void act(`rv-${row.id}`, () => api.post(`/admin/people/${row.id}/revoke-driver`), "Driver permission taken back.");
-                                  }}
-                                >
-                                  <ShieldOff className="h-4 w-4" />
-                                </button>
-                              ) : null}
                             </div>
                           </td>
                         </tr>

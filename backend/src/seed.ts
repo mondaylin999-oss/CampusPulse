@@ -308,7 +308,9 @@ async function runSeed(options: SeedOptions = {}) {
   };
 
   const admin = await ensureAccount({ username: "admin", name: "University Office", role: "admin" });
-  const driver = await ensureAccount({ username: "driver", name: "U Aung Aung", role: "driver" });
+  // Bus operators are managed by the office. They are transport records, not
+  // a fourth authorization role, so the seeded operator is an administrator.
+  const driver = await ensureAccount({ username: "driver", name: "U Aung Aung", role: "admin" });
   const student = await ensureAccount({ username: "student", name: "Ma Ei Ei", role: "user" });
   // The room-booking role: staff the office trusts to hold a room.
   const agent = await ensureAccount({ username: "staff", name: "Daw Khin Khin", role: "agent" });
@@ -316,7 +318,7 @@ async function runSeed(options: SeedOptions = {}) {
   if (admin.created || driver.created || student.created || agent.created) {
     log("\n  CampusPulse — first run");
     log("  ────────────────────────────────────────────────────────");
-    log(`  admin / staff / driver / student   password: ${ENV.seedPassword}`);
+    log(`  admin / agent / user accounts      password: ${ENV.seedPassword}`);
   }
 
   await seedCampus(log);

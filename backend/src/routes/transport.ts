@@ -98,7 +98,7 @@ transportRouter.get(
   route(async req => {
     const user = requireUser(req);
     const rows = await listTransportRoutes(user.role === "user");
-    return { routes: user.role === "driver" ? rows.filter(row => row.route.driverId === user.id) : rows };
+    return { routes: user.role === "admin" ? rows.filter(row => row.route.driverId === user.id) : rows };
   }),
 );
 
@@ -120,7 +120,7 @@ transportRouter.get(
   "/seats",
   route(async req => {
     const user = requireUser(req);
-    if (user.role === "driver") return { seats: await listMonthlySeats({ driverId: user.id }) };
+    if (user.role === "admin") return { seats: await listMonthlySeats({ driverId: user.id }) };
     if (user.role === "user") return { seats: await listMonthlySeats({ userId: user.id }) };
     return { seats: await listMonthlySeats({}) };
   }),
@@ -139,7 +139,7 @@ transportRouter.get(
   route(async req => {
     const user = requireUser(req);
     const rows = await listVehicles();
-    return { vehicles: user.role === "driver" ? rows.filter(row => row.vehicle.driverId === user.id) : rows };
+    return { vehicles: user.role === "admin" ? rows.filter(row => row.vehicle.driverId === user.id) : rows };
   }),
 );
 
@@ -148,11 +148,6 @@ transportRouter.get(
   route(async req => {
     const user = requireUser(req);
     if (user.role === "admin") return { maintenance: await listVehicleMaintenance() };
-    if (user.role === "driver") {
-      const rows = await listVehicles();
-      const own = rows.find(row => row.vehicle.driverId === user.id);
-      return { maintenance: own ? await listVehicleMaintenance(own.vehicle.id) : [] };
-    }
     throw forbidden("Maintenance reports are for the transport agent and the office.");
   }),
 );
@@ -162,7 +157,7 @@ transportRouter.get(
 transportRouter.get(
   "/driver/dashboard",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     return getDriverDashboard(driver.id);
   }),
 );
@@ -170,7 +165,7 @@ transportRouter.get(
 transportRouter.get(
   "/driver/profile",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     await ensureDriverProfile(driver.id);
     return { profile: await getDriverProfile(driver.id) };
   }),
@@ -179,7 +174,7 @@ transportRouter.get(
 transportRouter.patch(
   "/driver/profile",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(
       z.object({
         phone: z.string().max(32).optional(),
@@ -196,7 +191,7 @@ transportRouter.patch(
 transportRouter.post(
   "/driver/vehicle",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(
       z.object({
         plateNumber: z.string().min(2).max(32),
@@ -214,7 +209,7 @@ transportRouter.post(
 transportRouter.patch(
   "/driver/vehicle-capacity",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(z.object({ vehicleId: z.number().int().positive(), totalSeats: z.number().int().min(1).max(200) }), req.body);
     const updated = await updateOwnVehicleCapacity(driver.id, input.vehicleId, input.totalSeats);
     if (!updated) throw forbidden("You can only change the seats on your own ferry bus.");
@@ -226,7 +221,7 @@ transportRouter.patch(
 transportRouter.post(
   "/driver/routes",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(
       z.object({
         name: z.string().min(2).max(120),
@@ -254,7 +249,7 @@ transportRouter.post(
 transportRouter.patch(
   "/driver/routes/:id",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(
       z.object({
         name: z.string().min(2).max(120).optional(),
@@ -285,7 +280,7 @@ transportRouter.patch(
 transportRouter.post(
   "/driver/routes/:id/map",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(
       z.object({
         routeLineColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Choose a six-digit route line color."),
@@ -306,7 +301,7 @@ transportRouter.post(
 transportRouter.patch(
   "/driver/seats/:id",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(z.object({ status: z.enum(["confirmed", "cancelled"]) }), req.body);
     const updated = await decideMonthlySeat({ passId: parseId(req.params.id), driverId: driver.id, status: input.status });
     if (!updated) throw forbidden("You can only decide seats on your own road.");
@@ -317,7 +312,7 @@ transportRouter.patch(
 transportRouter.post(
   "/driver/maintenance",
   route(async req => {
-    const driver = requireRole(req, "driver");
+    const driver = requireRole(req, "admin");
     const input = parseBody(z.object({ vehicleId: z.number().int().positive(), issue: z.string().min(4).max(2000) }), req.body);
     return { id: await reportVehicleIssue({ driverId: driver.id, ...input }) };
   }),
@@ -327,7 +322,7 @@ transportRouter.post(
 transportRouter.patch(
   "/driver/maintenance/:id",
   route(async req => {
-    requireRole(req, "driver");
+    requireRole(req, "admin");
     const input = parseBody(z.object({ status: z.enum(["in_progress", "resolved"]), resolutionNote: z.string().max(2000).optional() }), req.body);
     await resolveVehicleMaintenance({ maintenanceId: parseId(req.params.id), ...input });
     return { success: true };

@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
 import { Badge, Button, Card, Field, Input, Notice, PageHeader, Select, StatTile } from "@/components/ui";
 
-const ROLE_LABEL: Record<string, string> = { admin: "Administrator", agent: "Canteen agent", driver: "Transport agent", user: "Student" };
+const ROLE_LABEL: Record<string, string> = { admin: "Administrator", agent: "Room-booking agent", user: "Student" };
 
 export default function Profile() {
   const { user, health, refresh } = useAuth();
@@ -66,7 +66,7 @@ export default function Profile() {
 
       <div className="grid gap-stack-md sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Signed in as" value={user.name ?? user.username ?? "—"} hint={`@${user.username ?? "—"}`} icon={<ShieldCheck className="h-4 w-4" />} />
-        <StatTile label="Role" value={ROLE_LABEL[user.role]} tone={user.role === "driver" ? "bus" : "rooms"} />
+        <StatTile label="Role" value={ROLE_LABEL[user.role]} tone={user.role === "admin" ? "bus" : "rooms"} />
         <StatTile label="System" value={health ? "Ready" : "Not answering"} icon={<Cpu className="h-4 w-4" />} hint={health?.campusTime ? `${health.campusTime} Yangon` : undefined} />
         <StatTile label="Records" value={health?.database?.startsWith("connected") ? "Saved" : "Unavailable"} icon={<Database className="h-4 w-4" />} hint="Everything you do is written to the campus records" />
       </div>
@@ -118,7 +118,7 @@ export default function Profile() {
         </Card>
       </div>
 
-      {user.role === "driver" ? (
+      {user.role === "admin" ? (
         <Card title="Transport agent details" accent="bus" subtitle="Students see your phone number next to your trips.">
           <form className="grid gap-4 sm:grid-cols-3" onSubmit={saveDriverProfile}>
             <Field label="Phone">

@@ -5,7 +5,7 @@
 //  home page, the room finder, the buildings, the timetable and the bus — the
 //  login screen is one route among many, not a gate in front of the site.
 //
-//  Only /me, /driver* and /admin* are guarded, and each redirects somewhere
+//  Only /me, /agent* and /admin* are guarded, and each redirects somewhere
 //  useful rather than to a dead end.
 //
 //  Adding a future university service (announcements, library, lost & found)
@@ -92,7 +92,7 @@ export default function App() {
         {/* ---------------- accounts ---------------- */}
         <Route path="/login">{user ? <Redirect to="/" /> : <Login />}</Route>
         <Route path="/profile">
-          <Guard roles={["user", "driver", "admin", "agent"]}>
+          <Guard roles={["user", "admin", "agent"]}>
             <Profile />
           </Guard>
         </Route>
@@ -105,20 +105,22 @@ export default function App() {
         </Route>
 
         {/* ---------------- room booking (staff + office) ---------------- */}
-        <Route path="/bookings">
+        <Route path="/agent">
           <Guard roles={["agent", "admin"]}>
             <MyBookings />
           </Guard>
         </Route>
 
-        {/* ---------------- bus driver ---------------- */}
-        <Route path="/driver">
-          <Guard roles={["driver"]}>
+        <Route path="/bookings"><Redirect to="/agent" /></Route>
+
+        {/* ---------------- bus management (administrator) ---------------- */}
+        <Route path="/admin/bus">
+          <Guard roles={["admin"]}>
             <BusConsole />
           </Guard>
         </Route>
-        <Route path="/driver/route">
-          <Guard roles={["driver"]}>
+        <Route path="/admin/bus/route">
+          <Guard roles={["admin"]}>
             <RouteEditor />
           </Guard>
         </Route>

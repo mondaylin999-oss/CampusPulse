@@ -107,9 +107,7 @@ export function homePathFor(role: SessionUser["role"]) {
       return "/admin";
     case "agent":
       return "/agent";
-    case "driver":
-      return "/driver";
     default:
-      return "/student";
+      return "/me";
   }
 }
