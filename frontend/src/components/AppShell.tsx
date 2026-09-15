@@ -86,8 +86,7 @@ const ROLE_LABEL: Record<Role, string> = {
 };
 
 function isActive(current: string, href: string) {
-  if (href === "/") return current === "/";
-  return current === href || current.startsWith(`${href}/`);
+  return current === href;
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
