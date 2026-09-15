@@ -26,7 +26,7 @@ export default function RouteEditor() {
 
   const [name, setName] = useState("");
   const [startPoint, setStartPoint] = useState("");
-  const [destination, setDestination] = useState("");
+  const [destination, setNext major node] = useState("");
   const [stops, setStops] = useState("");
   const [fare, setFare] = useState("");
   const [mapUrl, setMapUrl] = useState("");
@@ -62,7 +62,7 @@ export default function RouteEditor() {
     setSelectedId(selected.route.id);
     setName(selected.route.name);
     setStartPoint(selected.route.startPoint);
-    setDestination(selected.route.destination);
+    setNext major node(selected.route.destination);
     setStops(selected.stops.map(stop => stop.name).join(", ") || selected.route.pickupLocations);
     setFare(String(selected.route.fareCents));
     setMapUrl(selected.route.mapUrl ?? "");
@@ -141,7 +141,7 @@ export default function RouteEditor() {
   if (!selected)
     return (
       <>
-        <PageHeader title="Road & Map" subtitle="Open the road your bus bus runs. You can draw its line on the map straight afterwards." />
+        <PageHeader title="Transport Way & Map" subtitle="Open the road your bus bus runs. You can draw its line on the map straight afterwards." />
         <Card title="Open my road" accent="bus">
           <form
             className="grid gap-4 sm:grid-cols-2"
@@ -180,14 +180,14 @@ export default function RouteEditor() {
             <Field label="Price of one seat for a month (kyat)">
               <Input type="number" min={1} step={1} value={newRoad.fareCents} onChange={event => setNewRoad({ ...newRoad, fareCents: event.target.value })} required placeholder="45000" />
             </Field>
-            <Field label="Start point">
+            <Field label="First major node">
               <Input value={newRoad.startPoint} onChange={event => setNewRoad({ ...newRoad, startPoint: event.target.value })} required minLength={2} placeholder="Main Gate" />
             </Field>
-            <Field label="Destination">
+            <Field label="Next major node">
               <Input value={newRoad.destination} onChange={event => setNewRoad({ ...newRoad, destination: event.target.value })} required minLength={2} placeholder="North Hall" />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="Pickup stops" hint="Separate with commas — they appear in order.">
+              <Field label="Small pickup nodes" hint="Separate with commas — they appear in order.">
                 <Input value={newRoad.stops} onChange={event => setNewRoad({ ...newRoad, stops: event.target.value })} required placeholder="Library, Science Block, Sports Field" />
               </Field>
             </div>
@@ -221,8 +221,8 @@ export default function RouteEditor() {
   return (
     <>
       <PageHeader
-        title="Road & Map"
-        subtitle="Your road: the stops, the monthly price of a seat, and the line students see on the map."
+        title="Transport Way & Map"
+        subtitle="Add major township nodes first. School is always shown as the final major node; small pickup nodes appear inside the details."
         actions={
           routes.length > 1 ? (
             <select className="input h-9 w-[220px]" value={selected.route.id} onChange={event => setSelectedId(Number(event.target.value))}>
@@ -245,14 +245,14 @@ export default function RouteEditor() {
               <Input value={name} onChange={event => setName(event.target.value)} required minLength={2} maxLength={120} />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Start point">
+              <Field label="First major node">
                 <Input value={startPoint} onChange={event => setStartPoint(event.target.value)} required minLength={2} />
               </Field>
-              <Field label="Destination">
-                <Input value={destination} onChange={event => setDestination(event.target.value)} required minLength={2} />
+              <Field label="Next major node">
+                <Input value={destination} onChange={event => setNext major node(event.target.value)} required minLength={2} />
               </Field>
             </div>
-            <Field label="Pickup stops" hint="Separate with commas — they appear in order.">
+            <Field label="Small pickup nodes" hint="Separate with commas — they appear in order.">
               <Input value={stops} onChange={event => setStops(event.target.value)} required placeholder="Library, Science Block, Sports Field" />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
