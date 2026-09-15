@@ -3,7 +3,9 @@ services:
     name: campuspulse-api
     runtime: node
     plan: free
-    buildCommand: cd backend && npm ci && npm run build
+    # NODE_ENV is production during Render builds. TypeScript is intentionally
+    # a devDependency, so request build-time dependencies explicitly.
+    buildCommand: cd backend && npm ci --include=dev && npm run build
     # Render's pre-deploy command is paid-only. The schema is idempotent, so a
     # free service installs/upgrades it as part of every process start.
     startCommand: cd backend && npm run db:init && npm run serve
