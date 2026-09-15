@@ -8,45 +8,16 @@
 // ===========================================================================
 
 import { useEffect, useState } from "react";
-import { useSearch } from "wouter";
-import { Building2, ChevronRight, LayoutGrid, Map as MapIcon } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import { api, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
-import { CampusMap } from "@/components/CampusMap";
 import { Card, EmptyState, ErrorNote, Notice, PageHeader, Spinner } from "@/components/ui";
 
 export default function Buildings() {
-  // Arriving from a room page: /buildings?view=map&building=3 opens the map
-  // already looking at that building, so "view on map" lands somewhere useful
-  // instead of on whichever building happens to be first.
-  const search = useSearch();
-  const params = new URLSearchParams(search);
-  const askedBuilding = Number(params.get("building"));
-  const askedMap = params.get("view") === "map";
-
   const buildings = useApiData<BuildingOverview>(() => api.get("/rooms/buildings"), [], { pollMs: 60_000 });
-  const [buildingCode, setBuildingCode] = useState<number | null>(Number.isFinite(askedBuilding) && askedBuilding > 0 ? askedBuilding : null);
+  const [buildingCode, setBuildingCode] = useState<number | null>(null);
   const [floorLevel, setFloorLevel] = useState<number | null>(null);
-  // Which way to choose a building: the chips, or the campus map. Remembered
-  // for this browser, because it is a lasting preference rather than a step.
-  const [view, setView] = useState<"list" | "map">(() => {
-    if (askedMap) return "map"; // the link asked for the map explicitly
-    try {
-      return localStorage.getItem("campuspulse_buildings_view") === "map" ? "map" : "list";
-    } catch {
-      return "list";
-    }
-  });
-
-  const chooseView = (next: "list" | "map") => {
-    setView(next);
-    try {
-      localStorage.setItem("campuspulse_buildings_view", next);
-    } catch {
-      /* private browsing — the choice then lasts for this page only */
-    }
-  };
 
   // Open the first building automatically — an empty screen helps nobody. The
   // same guard covers a link naming a building that does not exist (an old
@@ -70,47 +41,12 @@ export default function Buildings() {
       <PageHeader
         title="Buildings & rooms"
         subtitle={board.data ? `${board.data.moment.dateLabel} · ${board.data.moment.clock}` : "Reading the timetable…"}
-        actions={
-          <div className="flex rounded-lg border border-outline-variant p-0.5" role="group" aria-label="Choose a view">
-            {([
-              { key: "list" as const, label: "List", icon: <LayoutGrid className="h-4 w-4" /> },
-              { key: "map" as const, label: "Map", icon: <MapIcon className="h-4 w-4" /> },
-            ]).map(option => (
-              <button
-                key={option.key}
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-[13px] font-semibold transition-colors ${
-                  view === option.key ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container-high"
-                }`}
-                onClick={() => chooseView(option.key)}
-                aria-pressed={view === option.key}
-              >
-                {option.icon}
-                {option.label}
-              </button>
-            ))}
-          </div>
-        }
       />
 
       {buildings.error ? <ErrorNote message={buildings.error} onRetry={() => void buildings.refresh()} /> : null}
       {buildings.loading && !buildings.data ? <Spinner /> : null}
 
-      {/* ---------- building chooser: the map… ---------- */}
-      {view === "map" ? (
-        <Card title="Campus map" subtitle="Each pin carries the number of rooms free in that building right now. Tap one to see them.">
-          <CampusMap
-            buildings={buildings.data?.buildings ?? []}
-            selectedCode={buildingCode}
-            onSelect={code => {
-              setBuildingCode(code);
-              setFloorLevel(null);
-            }}
-          />
-        </Card>
-      ) : null}
-
-      {/* ---------- …or the chips ---------- */}
-      <div className={`flex flex-wrap gap-2 ${view === "map" ? "hidden" : ""}`}>
+      <div className="flex flex-wrap gap-2">
         {(buildings.data?.buildings ?? []).map(row => {
           const active = row.code === buildingCode;
           return (
