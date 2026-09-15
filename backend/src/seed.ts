@@ -18,7 +18,7 @@
 //    * one school-bus route for the seeded driver
 // ===========================================================================
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db, getPool } from "./database.js";
 import {
@@ -150,20 +150,24 @@ async function seedCampus(log: (message: string) => void) {
   }
 }
 
-const DEMO_BATCHES = [
-  { code: "CS-1", name: "First Year CS", department: "Computer Science", yearLevel: 1, studentCount: 45 },
-  { code: "CS-2", name: "Second Year CS", department: "Computer Science", yearLevel: 2, studentCount: 42 },
-  { code: "CS-3", name: "Third Year CS", department: "Computer Science", yearLevel: 3, studentCount: 38 },
-  { code: "IT-1", name: "First Year IT", department: "Information Technology", yearLevel: 1, studentCount: 40 },
-  { code: "IT-2", name: "Second Year IT", department: "Information Technology", yearLevel: 2, studentCount: 36 },
-];
+const YEAR_NAMES = ["First", "Second", "Third", "Fourth", "Fifth"];
+const UNIVERSITY_BATCHES = YEAR_NAMES.flatMap((yearName, yearIndex) =>
+  ["A", "B", "C", "D", "E"].map(section => ({
+    code: `Y${yearIndex + 1}-${section}`,
+    name: `${yearName} Year — Section ${section}`,
+    department: "University of Information Technology",
+    yearLevel: yearIndex + 1,
+  })),
+);
 
-const DEMO_SUBJECTS = [
-  { code: "CS-1101", name: "Programming I", department: "Computer Science" },
-  { code: "CS-2103", name: "Data Structures", department: "Computer Science" },
-  { code: "CS-3201", name: "Software Engineering", department: "Computer Science" },
-  { code: "IT-1102", name: "Computer Networks", department: "Information Technology" },
-  { code: "MA-1001", name: "Engineering Mathematics", department: "Mathematics" },
+const UIT_SUBJECTS = [
+  { code: "CST-2101", name: "Programming in C++ (Cornerstone Project)", department: "Computer Science and Technology" },
+  { code: "CST-2202", name: "Discrete Mathematics", department: "Computer Science and Technology" },
+  { code: "CST-2302", name: "Web Technology (Cornerstone Project)", department: "Computer Science and Technology" },
+  { code: "CST-2303", name: "Human Computer Interaction and Information Security", department: "Computer Science and Technology" },
+  { code: "CST-2402", name: "Networking Fundamentals", department: "Computer Science and Technology" },
+  { code: "CST-2502", name: "Professional Communications", department: "Computer Science and Technology" },
+  { code: "CST-2602", name: "Myanmar Literature and Language", department: "Computer Science and Technology" },
 ];
 
 /**
@@ -173,46 +177,65 @@ const DEMO_SUBJECTS = [
  * is the point of the site.
  */
 async function seedTimetable(log: (message: string) => void) {
-  const existing = (await db().select({ total: sql<number>`count(*)::int` }).from(timetableEntries))[0]?.total ?? 0;
-  if (existing > 0) return;
+  await db().insert(batches).values(UNIVERSITY_BATCHES).onConflictDoNothing();
+  await db().insert(subjects).values(UIT_SUBJECTS).onConflictDoNothing();
 
-  await db().insert(batches).values(DEMO_BATCHES).onConflictDoNothing();
-  await db().insert(subjects).values(DEMO_SUBJECTS).onConflictDoNothing();
-
-  const batchRows = await db().select().from(batches);
+  let batchRows = await db().select().from(batches);
   const subjectRows = await db().select().from(subjects);
   const roomRows = await db().select().from(rooms);
   if (!roomRows.length) return;
+
+  // Remove only the original demonstration cohorts and their entries. This
+  // migration leaves anything an administrator created untouched.
+  const legacyCodes = ["CS-1", "CS-2", "CS-3", "IT-1", "IT-2"];
+  const legacyIds = batchRows.filter(row => legacyCodes.includes(row.code)).map(row => row.id);
+  if (legacyIds.length) {
+    await db().delete(timetableEntries).where(inArray(timetableEntries.batchId, legacyIds));
+    await db().delete(batches).where(inArray(batches.id, legacyIds));
+    batchRows = await db().select().from(batches);
+  }
 
   const batchId = (code: string) => batchRows.find(row => row.code === code)?.id ?? null;
   const subjectId = (code: string) => subjectRows.find(row => row.code === code)?.id ?? null;
   const roomId = (roomNumber: string) => roomRows.find(row => row.roomNumber === roomNumber)?.id ?? null;
 
-  // roomNumber, day (1=Mon), "HH:MM"-"HH:MM", batch, subject, teacher
-  const plan: Array<[string, number, number, number, string, string, string]> = [
-    ["325", 1, 9 * 60, 10 * 60, "CS-1", "CS-1101", "Daw Hla Hla"],
-    ["325", 1, 10 * 60, 11 * 60, "IT-2", "IT-1102", "U Kyaw Win"],
-    ["325", 1, 13 * 60, 14 * 60, "CS-3", "CS-3201", "Dr. Moe Moe"],
-    ["325", 3, 9 * 60, 11 * 60, "CS-2", "CS-2103", "Daw Hla Hla"],
-    ["326", 1, 9 * 60, 10 * 60 + 30, "CS-2", "CS-2103", "U Kyaw Win"],
-    ["214", 1, 8 * 60, 10 * 60, "IT-1", "MA-1001", "Dr. Moe Moe"],
-    ["214", 2, 13 * 60, 15 * 60, "IT-1", "IT-1102", "U Kyaw Win"],
-    ["111", 2, 9 * 60, 12 * 60, "CS-1", "MA-1001", "Daw Hla Hla"],
-    ["432", 4, 10 * 60, 12 * 60, "CS-3", "CS-3201", "Dr. Moe Moe"],
-    ["251", 5, 9 * 60, 11 * 60, "IT-2", "CS-2103", "U Kyaw Win"],
+  const sectionE = batchId("Y1-E");
+  const alreadyInstalled = sectionE
+    ? (await db().select({ total: sql<number>`count(*)::int` }).from(timetableEntries).where(eq(timetableEntries.batchId, sectionE)))[0]?.total ?? 0
+    : 0;
+  if (alreadyInstalled > 0) return;
+
+  const P = [[510, 570], [580, 640], [650, 710], [760, 820], [830, 890], [900, 960]] as const;
+  const teachers: Record<string, string> = {
+    "CST-2101": "Daw Laet Laet Lin", "CST-2202": "Daw Aye Nyein San", "CST-2302": "Dr. Ciin Zam Man",
+    "CST-2303": "Daw Lay Myat Myat Thein", "CST-2402": "Daw Su Su Naing", "CST-2502": "Daw May Naing Win",
+    "CST-2602": "Daw Naw Aster",
+  };
+  // First Year, Section E — Semester II timetable transcribed from the
+  // university notice. Each tuple is day, period, room, subject and class type.
+  const photographed: Array<[number, number, string, string, "L" | "TDA"]> = [
+    [1,0,"332","CST-2303","L"],[1,1,"326","CST-2502","L"],[1,2,"326","CST-2202","L"],[1,3,"232","CST-2302","L"],[1,4,"244","CST-2502","TDA"],[1,5,"431","CST-2202","TDA"],
+    [2,0,"232","CST-2101","TDA"],[2,1,"326","CST-2502","L"],[2,2,"326","CST-2602","L"],[2,3,"232","CST-2302","TDA"],[2,4,"422","CST-2303","TDA"],[2,5,"421","CST-2402","TDA"],
+    [3,0,"432","CST-2202","TDA"],[3,1,"232","CST-2101","TDA"],[3,2,"235","CST-2302","TDA"],[3,3,"421","CST-2502","TDA"],
+    [4,0,"326","CST-2402","L"],[4,1,"326","CST-2602","L"],[4,2,"326","CST-2303","L"],[4,3,"426","CST-2602","TDA"],[4,4,"322","CST-2202","L"],[4,5,"421","CST-2602","TDA"],
+    [5,0,"232","CST-2302","L"],[5,1,"232","CST-2101","L"],[5,2,"326","CST-2402","L"],[5,3,"232","CST-2402","TDA"],[5,4,"232","CST-2101","TDA"],[5,5,"424","CST-2303","TDA"],
   ];
 
+  const plan: Array<[string, number, number, number, string, string, string, string]> = photographed.map(([day, period, room, subject, kind]) =>
+    [room, day, P[period]![0], P[period]![1], "Y1-E", subject, teachers[subject] ?? "", kind],
+  );
+
   const values = plan
-    .map(([roomNumber, dayOfWeek, startMinute, endMinute, batchCode, subjectCode, teacher]) => {
+    .map(([roomNumber, dayOfWeek, startMinute, endMinute, batchCode, subjectCode, teacher, kind]) => {
       const room = roomId(roomNumber);
       if (!room) return null;
-      return { roomId: room, batchId: batchId(batchCode), subjectId: subjectId(subjectCode), teacher, dayOfWeek, startMinute, endMinute };
+      return { roomId: room, batchId: batchId(batchCode), subjectId: subjectId(subjectCode), title: kind, teacher, dayOfWeek, startMinute, endMinute };
     })
     .filter((value): value is NonNullable<typeof value> => value !== null);
 
   if (values.length) {
     await db().insert(timetableEntries).values(values);
-    log(`  timetable    ${values.length} demo sessions across the week`);
+    log(`  timetable    ${values.length} First Year Section E sessions across the week`);
   }
 }
 

@@ -31,6 +31,15 @@ type FormState = {
   effectiveTo: string;
 };
 
+const PERIODS = [
+  { label: "Period 1 · 8:30–9:30", start: "08:30", end: "09:30" },
+  { label: "Period 2 · 9:40–10:40", start: "09:40", end: "10:40" },
+  { label: "Period 3 · 10:50–11:50", start: "10:50", end: "11:50" },
+  { label: "Period 4 · 12:40–1:40", start: "12:40", end: "13:40" },
+  { label: "Period 5 · 1:50–2:50", start: "13:50", end: "14:50" },
+  { label: "Period 6 · 3:00–4:00", start: "15:00", end: "16:00" },
+] as const;
+
 const EMPTY: FormState = {
   id: null,
   roomId: "",
@@ -39,8 +48,8 @@ const EMPTY: FormState = {
   title: "",
   teacher: "",
   dayOfWeek: "1",
-  startMinute: "09:00",
-  endMinute: "10:00",
+  startMinute: "08:30",
+  endMinute: "09:30",
   effectiveFrom: "",
   effectiveTo: "",
 };
@@ -64,6 +73,7 @@ export default function TimetableManager() {
   const rooms = campus.data?.rooms ?? [];
   const batches = academics.data?.batches ?? [];
   const subjects = academics.data?.subjects ?? [];
+  const selectedPeriod = `${form.startMinute}-${form.endMinute}`;
 
   // ---- live conflict check -------------------------------------------------
   // Re-asked whenever the four fields that can clash change. Debounced, so
@@ -205,12 +215,18 @@ export default function TimetableManager() {
             </Select>
           </Field>
 
-          <Field label="Starts">
-            <Input type="time" value={form.startMinute} onChange={event => setForm({ ...form, startMinute: event.target.value })} required />
-          </Field>
-
-          <Field label="Ends">
-            <Input type="time" value={form.endMinute} onChange={event => setForm({ ...form, endMinute: event.target.value })} required />
+          <Field label="Class period" hint="The timetable has six fixed one-hour periods.">
+            <Select
+              value={selectedPeriod}
+              onChange={event => {
+                const period = PERIODS.find(row => `${row.start}-${row.end}` === event.target.value);
+                if (period) setForm({ ...form, startMinute: period.start, endMinute: period.end });
+              }}
+              required
+            >
+              {!PERIODS.some(row => `${row.start}-${row.end}` === selectedPeriod) ? <option value={selectedPeriod}>{form.startMinute}–{form.endMinute} (legacy)</option> : null}
+              {PERIODS.map(period => <option key={period.label} value={`${period.start}-${period.end}`}>{period.label}</option>)}
+            </Select>
           </Field>
 
           <Field label="Subject">
