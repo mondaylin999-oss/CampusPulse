@@ -105,15 +105,16 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     <p className="mt-3 text-[12px] text-on-surface-variant">To clear a class, choose “Empty” or clear its room, then save. Room and class conflicts are checked by the server.</p>
 
     <div className="mt-5 border-t border-outline-variant pt-4">
-      <h3 className="text-[15px] font-semibold text-on-surface">Sections with a timetable</h3>
-      <p className="mt-0.5 text-[12px] text-on-surface-variant">Select a section above to view or change its schedule.</p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <h3 className="text-[15px] font-semibold text-on-surface">All batch sections</h3>
+      <p className="mt-0.5 text-[12px] text-on-surface-variant">Every section is shown here. Select one to add or change its timetable.</p>
+      {allTimetables.error ? <div className="mt-3"><ErrorNote message={allTimetables.error} onRetry={() => void allTimetables.refresh()} /></div> : null}
+      {allTimetables.loading && !allTimetables.data ? <Spinner label="Checking section timetables…" /> : null}
+      {allTimetables.data ? <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {batches
           .map(batch => ({
             batch,
             count: (allTimetables.data?.entries ?? []).filter(row => row.entry.batchId === batch.id).length,
           }))
-          .filter(row => row.count > 0)
           .map(({ batch, count }) => (
             <button
               key={batch.id}
@@ -126,15 +127,18 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
               }`}
             >
               <span className="block text-[13px] font-semibold">{batch.code} — {batch.name}</span>
-              <span className={`block text-[11px] ${String(batch.id) === batchId ? "text-on-primary/80" : "text-on-surface-variant"}`}>
-                {count} session{count === 1 ? "" : "s"}
+              <span className={`mt-1 block text-[11px] font-semibold ${
+                String(batch.id) === batchId
+                  ? "text-on-primary/80"
+                  : count
+                    ? "text-secondary"
+                    : "text-error"
+              }`}>
+                {count ? `Timetable added · ${count} session${count === 1 ? "" : "s"}` : "Not added"}
               </span>
             </button>
           ))}
-        {allTimetables.data && !allTimetables.data.entries.length ? (
-          <p className="text-[13px] text-on-surface-variant">No section has a timetable yet.</p>
-        ) : null}
-      </div>
+      </div> : null}
     </div>
   </Card>;
 }
