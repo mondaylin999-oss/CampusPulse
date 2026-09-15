@@ -1,6 +1,5 @@
 // ===========================================================================
-//  Profile.tsx — the signed-in account, the password, and (for a transport
-//  agent) their contact details.
+//  Profile.tsx — the signed-in account and password.
 // ===========================================================================
 
 import { useState, type FormEvent } from "react";
@@ -8,20 +7,16 @@ import { Cpu, Database, KeyRound, ShieldCheck } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
-import { Badge, Button, Card, Field, Input, Notice, PageHeader, Select, StatTile } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, Notice, PageHeader, StatTile } from "@/components/ui";
 
 const ROLE_LABEL: Record<string, string> = { admin: "Administrator", agent: "Room-booking agent", user: "Student" };
 
 export default function Profile() {
-  const { user, health, refresh } = useAuth();
+  const { user, health } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "rooms" | "error"; text: string } | null>(null);
-
-  const [phone, setPhone] = useState("");
-  const [licenseNumber, setLicenseNumber] = useState("");
-  const [availability, setAvailability] = useState<"available" | "unavailable">("available");
 
   if (!user) return null;
 
@@ -36,25 +31,6 @@ export default function Profile() {
       setMessage({ tone: "rooms", text: "Password changed. Use the new one next time you sign in." });
     } catch (caught) {
       setMessage({ tone: "error", text: caught instanceof ApiError ? caught.message : "Could not change the password." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveDriverProfile(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage(null);
-    try {
-      await api.patch("/transport/driver/profile", {
-        phone: phone.trim() || undefined,
-        licenseNumber: licenseNumber.trim() || undefined,
-        availability,
-      });
-      setMessage({ tone: "rooms", text: "Driver details saved." });
-      await refresh();
-    } catch (caught) {
-      setMessage({ tone: "error", text: caught instanceof ApiError ? caught.message : "Could not save your details." });
     } finally {
       setBusy(false);
     }
@@ -118,29 +94,6 @@ export default function Profile() {
         </Card>
       </div>
 
-      {user.role === "admin" ? (
-        <Card title="Transport agent details" accent="bus" subtitle="Students see your phone number next to your trips.">
-          <form className="grid gap-4 sm:grid-cols-3" onSubmit={saveDriverProfile}>
-            <Field label="Phone">
-              <Input value={phone} onChange={event => setPhone(event.target.value)} placeholder="+95 9 555 0101" />
-            </Field>
-            <Field label="Licence number">
-              <Input value={licenseNumber} onChange={event => setLicenseNumber(event.target.value)} placeholder="YGN-DRV-4471" />
-            </Field>
-            <Field label="Availability">
-              <Select value={availability} onChange={event => setAvailability(event.target.value as "available" | "unavailable")}>
-                <option value="available">Available</option>
-                <option value="unavailable">Unavailable</option>
-              </Select>
-            </Field>
-            <div className="sm:col-span-3">
-              <Button type="submit" variant="bus" busy={busy}>
-                Save details
-              </Button>
-            </div>
-          </form>
-        </Card>
-      ) : null}
     </>
   );
 }

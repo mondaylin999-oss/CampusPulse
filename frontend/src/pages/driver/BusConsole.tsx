@@ -36,6 +36,7 @@ export default function BusConsole() {
   const [seats, setSeats] = useState("");
   const [issue, setIssue] = useState("");
   const [availability, setAvailability] = useState<"available" | "unavailable">("available");
+  const [operator, setOperator] = useState({ phone: "", licenseNumber: "" });
   const [bus, setBus] = useState({ plateNumber: "", model: "", totalSeats: "18", monthlyFeeCents: "45000" });
   const [table, setTable] = useState({ routeId: "", month: "", times: "05:05, 16:30" });
 
@@ -105,12 +106,47 @@ export default function BusConsole() {
 
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
+      <Card title="Transport contact" subtitle="The operator name and phone number are shown to students on the School Bus page." accent="bus">
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={(event: FormEvent) => {
+            event.preventDefault();
+            void act(
+              "operator",
+              () =>
+                api.patch("/transport/driver/profile", {
+                  phone: operator.phone.trim() || dashboard.profile?.profile.phone || undefined,
+                  licenseNumber: operator.licenseNumber.trim() || dashboard.profile?.profile.licenseNumber || undefined,
+                }),
+              "Transport contact saved.",
+            );
+          }}
+        >
+          <Field label="Contact phone">
+            <Input
+              value={operator.phone}
+              onChange={event => setOperator({ ...operator, phone: event.target.value })}
+              placeholder={dashboard.profile?.profile.phone ?? "+95 9 555 0101"}
+            />
+          </Field>
+          <Field label="Licence number" hint="For the university's transport record.">
+            <Input
+              value={operator.licenseNumber}
+              onChange={event => setOperator({ ...operator, licenseNumber: event.target.value })}
+              placeholder={dashboard.profile?.profile.licenseNumber ?? "YGN-DRV-4471"}
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Button type="submit" variant="bus" busy={busy === "operator"}>Save transport contact</Button>
+          </div>
+        </form>
+      </Card>
+
       {/* Students pay the driver directly, so a missing phone number means
           nobody can pay — worth saying loudly. */}
       {!dashboard.profile?.profile.phone ? (
         <Notice tone="warning">
-          Put your phone number on your Profile. Students ring it to send you the monthly fare — without it they cannot pay you, and the
-          seat requests will just sit here waiting.
+          Add the transport phone number above. Students use it to contact the operator and arrange transport.
         </Notice>
       ) : null}
 
