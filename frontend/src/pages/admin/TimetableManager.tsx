@@ -11,7 +11,7 @@
 //      never the thing that decides
 // ===========================================================================
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Copy, Save, Table2 } from "lucide-react";
 import { api, ApiError, DAY_NAMES, type AdminRoom, type BatchRow, type SubjectRow, type TimetableRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
@@ -29,6 +29,7 @@ const PERIODS = [
 type GridCell = { roomId: string; subjectId: string; title: string; teacher: string; department: string };
 
 const EMPTY_CELL: GridCell = { roomId: "", subjectId: "", title: "", teacher: "", department: "" };
+const UNSAVED_MESSAGE = "You have unsaved timetable changes. Leave without saving them?";
 
 function cellFromRow(row: TimetableRow): GridCell {
   const department = row.entry.title?.startsWith("DEPT:") ? row.entry.title.slice(5) : "";
@@ -55,6 +56,50 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
   const [copyFromBatchId, setCopyFromBatchId] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "rooms" | "error"; text: string } | null>(null);
+  const hasUnsavedChanges = dirty.size > 0;
+
+  const confirmDiscard = useCallback(() => !hasUnsavedChanges || window.confirm(UNSAVED_MESSAGE), [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    let restoringHistory = false;
+
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const linkClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!target || target.target === "_blank" || target.hasAttribute("download")) return;
+      const destination = new URL(target.href, window.location.href);
+      const current = new URL(window.location.href);
+      if (destination.href === current.href) return;
+      if (!window.confirm(UNSAVED_MESSAGE)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    };
+    const historyChange = () => {
+      if (restoringHistory) {
+        restoringHistory = false;
+        return;
+      }
+      if (!window.confirm(UNSAVED_MESSAGE)) {
+        restoringHistory = true;
+        window.history.go(1);
+      }
+    };
+
+    window.addEventListener("beforeunload", beforeUnload);
+    window.addEventListener("popstate", historyChange);
+    document.addEventListener("click", linkClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      window.removeEventListener("popstate", historyChange);
+      document.removeEventListener("click", linkClick, true);
+    };
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     if (!batchId && batches.length) setBatchId(String(batches.find(row => row.code === "Y1-E")?.id ?? batches[0]!.id));
@@ -77,6 +122,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
 
   const copyCompleteWeek = () => {
     if (!batchId || !copyFromBatchId || batchId === copyFromBatchId) return;
+    if (!confirmDiscard()) return;
     const sourceRows = (allTimetables.data?.entries ?? []).filter(row => row.entry.batchId === Number(copyFromBatchId));
     const next: Record<string, GridCell> = {};
     const changed = new Set<string>();
@@ -132,7 +178,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
 
   return <Card title="Spreadsheet timetable" subtitle="Select a class, edit cells like a worksheet, then save all changes together." actions={<Table2 className="h-5 w-5 text-on-surface-variant" />}>
     <div className="mb-4 flex flex-wrap items-end gap-3">
-      <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => { const destination = event.target.value; setBatchId(destination); setCopyFromBatchId(current => current === destination ? "" : current); setMessage(null); }}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
+      <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => { const destination = event.target.value; if (!confirmDiscard()) return; setBatchId(destination); setCopyFromBatchId(current => current === destination ? "" : current); setMessage(null); }}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
       <Button onClick={() => void saveAll()} busy={saving} disabled={!dirty.size}><Save className="h-4 w-4" />Save timetable{dirty.size ? ` (${dirty.size})` : ""}</Button>
     </div>
     <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3">
