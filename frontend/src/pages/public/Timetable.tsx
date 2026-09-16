@@ -24,16 +24,20 @@ export default function Timetable() {
   const [year, setYear] = useState("1");
   const [section, setSection] = useState("E");
   const catalog = useApiData<SchedulePayload>(() => api.get("/rooms/timetable/classes"), []);
-  const selected = catalog.data?.batches.find(batch => batch.code === `Y${year}-${section}`);
+  const availableSections = useMemo(() => {
+    const scheduledBatchIds = new Set((catalog.data?.entries ?? []).map(row => row.entry.batchId).filter((id): id is number => id !== null));
+    return SECTIONS.filter(value => {
+      const batch = catalog.data?.batches.find(row => row.code === `Y${year}-${value}`);
+      return Boolean(batch && scheduledBatchIds.has(batch.id));
+    });
+  }, [catalog.data, year]);
+  const selected = availableSections.includes(section) ? catalog.data?.batches.find(batch => batch.code === `Y${year}-${section}`) : undefined;
   const schedule = useApiData<SchedulePayload>(() => api.get("/rooms/timetable/classes", { batchId: selected?.id }), [selected?.id]);
   const changes = useApiData<{ from: string; to: string; exceptions: ExceptionRow[] }>(() => api.get("/rooms/changes/upcoming"), []);
 
   useEffect(() => {
-    if (!selected && catalog.data?.batches.length) {
-      const match = /^Y(\d)-([A-E])$/.exec(catalog.data.batches[0]!.code);
-      if (match) { setYear(match[1]!); setSection(match[2]!); }
-    }
-  }, [catalog.data, selected]);
+    if (availableSections.length && !availableSections.includes(section)) setSection(availableSections[0]!);
+  }, [availableSections, section]);
 
   const bySlot = useMemo(() => {
     const map = new Map<string, TimetableRow>();
@@ -47,7 +51,7 @@ export default function Timetable() {
       <Card title="Choose your class">
         <div className="grid gap-3 sm:grid-cols-2">
           <label><span className="field-label">Batch</span><Select value={year} onChange={event => setYear(event.target.value)}>{YEARS.map((name, i) => <option key={name} value={i + 1}>{name} Year</option>)}</Select></label>
-          <label><span className="field-label">Section</span><Select value={section} onChange={event => setSection(event.target.value)}>{SECTIONS.map(value => <option key={value} value={value}>Section {value}</option>)}</Select></label>
+          <label><span className="field-label">Section</span><Select value={section} onChange={event => setSection(event.target.value)} disabled={!availableSections.length}>{availableSections.length ? availableSections.map(value => <option key={value} value={value}>Section {value}</option>) : <option value="">No timetable added</option>}</Select></label>
         </div>
       </Card>
 
