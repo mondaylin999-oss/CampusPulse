@@ -112,7 +112,7 @@ export default function RoomDetail() {
       </Card>
 
       {/* ---------- the normal week ---------- */}
-      <Card title="Normal weekly timetable" subtitle="The gaps are the point — anything white is free in a normal week.">
+      <Card title="Normal weekly timetable" subtitle="Monday–Friday · six fixed university periods.">
         {week.loading && !week.data ? <Spinner /> : null}
         {week.data ? <WeekGrid week={week.data} todayDayOfWeek={moment.dayOfWeek} /> : null}
       </Card>
