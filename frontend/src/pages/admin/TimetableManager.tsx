@@ -12,7 +12,7 @@
 // ===========================================================================
 
 import { useEffect, useState } from "react";
-import { Save, Table2 } from "lucide-react";
+import { Copy, Save, Table2 } from "lucide-react";
 import { api, ApiError, DAY_NAMES, type AdminRoom, type BatchRow, type SubjectRow, type TimetableRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { Button, Card, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner } from "@/components/ui";
@@ -28,12 +28,31 @@ const PERIODS = [
 
 type GridCell = { roomId: string; subjectId: string; title: string; teacher: string; department: string };
 
+const EMPTY_CELL: GridCell = { roomId: "", subjectId: "", title: "", teacher: "", department: "" };
+
+function cellFromRow(row: TimetableRow): GridCell {
+  const department = row.entry.title?.startsWith("DEPT:") ? row.entry.title.slice(5) : "";
+  return {
+    roomId: String(row.entry.roomId),
+    subjectId: row.entry.subjectId ? String(row.entry.subjectId) : "",
+    title: department ? "" : (row.entry.title ?? ""),
+    teacher: department ? "" : (row.entry.teacher ?? ""),
+    department,
+  };
+}
+
+function gridKey(row: TimetableRow) {
+  const period = PERIODS.findIndex(item => item.start === row.startTime && item.end === row.endTime);
+  return period < 0 ? null : `${row.entry.dayOfWeek}-${period}`;
+}
+
 function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; subjects: SubjectRow[]; rooms: AdminRoom[] }) {
   const [batchId, setBatchId] = useState("");
   const timetable = useApiData<{ entries: TimetableRow[] }>(() => api.get("/admin/timetable", { batchId: batchId || undefined }), [batchId]);
   const allTimetables = useApiData<{ entries: TimetableRow[] }>(() => api.get("/admin/timetable"), []);
   const [cells, setCells] = useState<Record<string, GridCell>>({});
   const [dirty, setDirty] = useState<Set<string>>(new Set());
+  const [copyFromBatchId, setCopyFromBatchId] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "rooms" | "error"; text: string } | null>(null);
 
@@ -44,21 +63,46 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
   useEffect(() => {
     const next: Record<string, GridCell> = {};
     for (const row of timetable.data?.entries ?? []) {
-      const period = PERIODS.findIndex(item => item.start === row.startTime && item.end === row.endTime);
-      if (period >= 0) next[`${row.entry.dayOfWeek}-${period}`] = {
-        roomId: String(row.entry.roomId), subjectId: row.entry.subjectId ? String(row.entry.subjectId) : "",
-        title: row.entry.title?.startsWith("DEPT:") ? "" : (row.entry.title ?? ""),
-        teacher: row.entry.title?.startsWith("DEPT:") ? "" : (row.entry.teacher ?? ""),
-        department: row.entry.title?.startsWith("DEPT:") ? row.entry.title.slice(5) : "",
-      };
+      const key = gridKey(row);
+      if (key) next[key] = cellFromRow(row);
     }
     setCells(next);
     setDirty(new Set());
   }, [timetable.data]);
 
   const change = (key: string, patch: Partial<GridCell>) => {
-    setCells(current => ({ ...current, [key]: { ...(current[key] ?? { roomId: "", subjectId: "", title: "", teacher: "", department: "" }), ...patch } }));
+    setCells(current => ({ ...current, [key]: { ...(current[key] ?? EMPTY_CELL), ...patch } }));
     setDirty(current => new Set(current).add(key));
+  };
+
+  const copyCompleteWeek = () => {
+    if (!batchId || !copyFromBatchId || batchId === copyFromBatchId) return;
+    const sourceRows = (allTimetables.data?.entries ?? []).filter(row => row.entry.batchId === Number(copyFromBatchId));
+    const next: Record<string, GridCell> = {};
+    const changed = new Set<string>();
+
+    // Every fixed-period cell is included. Blank source cells therefore clear
+    // the corresponding destination cell when the administrator saves.
+    for (let day = 1; day <= 5; day += 1) {
+      for (let period = 0; period < PERIODS.length; period += 1) {
+        const key = `${day}-${period}`;
+        next[key] = { ...EMPTY_CELL };
+        changed.add(key);
+      }
+    }
+    for (const row of sourceRows) {
+      const key = gridKey(row);
+      if (key) next[key] = cellFromRow(row);
+    }
+
+    const source = batches.find(row => row.id === Number(copyFromBatchId));
+    const destination = batches.find(row => row.id === Number(batchId));
+    setCells(next);
+    setDirty(changed);
+    setMessage({
+      tone: "rooms",
+      text: `Copied the complete week from ${source?.code ?? "the source"} into ${destination?.code ?? "the destination"}. Review the rooms, then save the 30-cell draft.`,
+    });
   };
 
   const saveAll = async () => {
@@ -88,8 +132,25 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
 
   return <Card title="Spreadsheet timetable" subtitle="Select a class, edit cells like a worksheet, then save all changes together." actions={<Table2 className="h-5 w-5 text-on-surface-variant" />}>
     <div className="mb-4 flex flex-wrap items-end gap-3">
-      <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => { setBatchId(event.target.value); setMessage(null); }}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
+      <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => { const destination = event.target.value; setBatchId(destination); setCopyFromBatchId(current => current === destination ? "" : current); setMessage(null); }}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
       <Button onClick={() => void saveAll()} busy={saving} disabled={!dirty.size}><Save className="h-4 w-4" />Save timetable{dirty.size ? ` (${dirty.size})` : ""}</Button>
+    </div>
+    <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Copy complete week from" hint="The selected section above is the destination.">
+          <Select className="min-w-64" value={copyFromBatchId} onChange={event => setCopyFromBatchId(event.target.value)}>
+            <option value="">Choose source section</option>
+            {batches.filter(row => String(row.id) !== batchId).map(row => {
+              const count = (allTimetables.data?.entries ?? []).filter(entry => entry.entry.batchId === row.id).length;
+              return <option key={row.id} value={row.id} disabled={!count}>{row.code} — {row.name}{count ? ` (${count} sessions)` : " (not added)"}</option>;
+            })}
+          </Select>
+        </Field>
+        <Button variant="rooms" onClick={copyCompleteWeek} disabled={!copyFromBatchId || !batchId || copyFromBatchId === batchId || !allTimetables.data}>
+          <Copy className="h-4 w-4" /> Copy week into editor
+        </Button>
+      </div>
+      <p className="mt-2 text-[12px] text-on-surface-variant">This creates an editable duplicate. Change any rooms that clash, then use Save timetable.</p>
     </div>
     {message ? <div className="mb-4"><Notice tone={message.tone}>{message.text}</Notice></div> : null}
     {timetable.error ? <ErrorNote message={timetable.error} onRetry={() => void timetable.refresh()} /> : null}
@@ -97,7 +158,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     <div className="overflow-x-auto"><table className="data-table min-w-[1320px] table-fixed">
       <thead><tr><th className="w-28">Day</th>{PERIODS.map(period => <th key={period.label} className="text-center">{period.label}</th>)}</tr></thead>
       <tbody>{[1,2,3,4,5].map(day => <tr key={day}><th>{DAY_NAMES[day]}</th>{PERIODS.map((_period, index) => {
-        const key = `${day}-${index}`; const cell = cells[key] ?? { roomId: "", subjectId: "", title: "", teacher: "", department: "" };
+        const key = `${day}-${index}`; const cell = cells[key] ?? EMPTY_CELL;
         const hasLecture = Boolean(cell.title || cell.teacher.trim());
         const hasDepartment = Boolean(cell.department.trim());
         return <td key={key} className={`space-y-1.5 align-top ${dirty.has(key) ? "bg-warning-container/30" : ""}`}>
