@@ -26,7 +26,7 @@ export default function RouteEditor() {
 
   const [name, setName] = useState("");
   const [startPoint, setStartPoint] = useState("");
-  const [destination, setNext major node] = useState("");
+  const [destination, setDestination] = useState("");
   const [stops, setStops] = useState("");
   const [fare, setFare] = useState("");
   const [mapUrl, setMapUrl] = useState("");
@@ -62,7 +62,7 @@ export default function RouteEditor() {
     setSelectedId(selected.route.id);
     setName(selected.route.name);
     setStartPoint(selected.route.startPoint);
-    setNext major node(selected.route.destination);
+    setDestination(selected.route.destination);
     setStops(selected.stops.map(stop => stop.name).join(", ") || selected.route.pickupLocations);
     setFare(String(selected.route.fareCents));
     setMapUrl(selected.route.mapUrl ?? "");
@@ -249,7 +249,7 @@ export default function RouteEditor() {
                 <Input value={startPoint} onChange={event => setStartPoint(event.target.value)} required minLength={2} />
               </Field>
               <Field label="Next major node">
-                <Input value={destination} onChange={event => setNext major node(event.target.value)} required minLength={2} />
+                <Input value={destination} onChange={event => setDestination(event.target.value)} required minLength={2} />
               </Field>
             </div>
             <Field label="Small pickup nodes" hint="Separate with commas — they appear in order.">
