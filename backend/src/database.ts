@@ -58,10 +58,8 @@ export async function pingDatabase(): Promise<{ ok: boolean; error?: string; ser
  */
 const REQUIRED_TABLES = [
   "users",
-  "driver_applications",
   "vehicles",
   "transport_routes",
-  "ride_bookings",
   "buildings",
   "floors",
   "rooms",

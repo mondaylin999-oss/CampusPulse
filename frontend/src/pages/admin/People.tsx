@@ -1,14 +1,10 @@
 // ===========================================================================
-//  admin/People.tsx — accounts, and THE DRIVER PERMISSION QUEUE.
-//
-//  Nobody becomes a bus driver by signing up. A student asks; the request
-//  lands here; approving it is what promotes the account and creates the bus.
-//  Refusing leaves the account exactly as it was.
+//  admin/People.tsx — administrator, room-booking agent and user accounts.
 // ===========================================================================
 
 import { useState } from "react";
-import { BadgeCheck, KeyRound, Plus, UserPlus, X } from "lucide-react";
-import { api, ApiError, type DriverApplicationRow, type SessionUser } from "@/lib/api";
+import { KeyRound, Plus, UserPlus } from "lucide-react";
+import { api, ApiError, type SessionUser } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { dateTime } from "@/lib/format";
 import { Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner, StatusBadge } from "@/components/ui";
@@ -17,7 +13,6 @@ type People = { admins: SessionUser[]; agents: SessionUser[]; students: SessionU
 
 export default function AdminPeople() {
   const people = useApiData<People>(() => api.get("/admin/people"), []);
-  const applications = useApiData<{ applications: DriverApplicationRow[] }>(() => api.get("/admin/driver-applications"), []);
   const [note, setNote] = useState<{ tone: "rooms" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", username: "", email: "", password: "", role: "user" });
@@ -28,7 +23,7 @@ export default function AdminPeople() {
     try {
       await action();
       setNote({ tone: "rooms", text: success });
-      await Promise.all([people.refresh(), applications.refresh()]);
+      await people.refresh();
     } catch (caught) {
       setNote({ tone: "error", text: caught instanceof ApiError ? caught.message : "That did not work." });
     } finally {
@@ -36,15 +31,11 @@ export default function AdminPeople() {
     }
   };
 
-  const pending = (applications.data?.applications ?? []).filter(row => row.application.status === "pending");
-  const decided = (applications.data?.applications ?? []).filter(row => row.application.status !== "pending");
-
   return (
     <div className="space-y-stack-md">
       <PageHeader title="People & agents" subtitle="Manage administrator, room-booking agent, and student accounts." />
 
       {note ? <Notice tone={note.tone}>{note.text}</Notice> : null}
-      {applications.error ? <ErrorNote message={applications.error} onRetry={() => void applications.refresh()} /> : null}
 
       {/* ---------- accounts ---------- */}
       <Card title="Create an account" subtitle="For agents and users who cannot register themselves." actions={<UserPlus className="h-5 w-5 text-on-surface-variant" />}>

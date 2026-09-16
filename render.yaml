@@ -34,8 +34,6 @@ services:
         value: "6"
       - key: SEED_ROOMS_PER_FLOOR
         value: "6"
-      - key: CAMPUS_ENGINE_REQUIRED
-        value: "false"
       # Accept the production Vercel site and its preview deployments. The API
       # carries no cookies; protected calls use an Authorization bearer token.
       - key: CORS_ORIGIN_REGEX

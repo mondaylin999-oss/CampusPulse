@@ -2,8 +2,8 @@
 //  AppShell.tsx — the frame EVERY screen sits in, signed in or not.
 //
 //  There is deliberately ONE shell rather than a public site and a separate
-//  portal: a student who logs in to book a bus seat should not feel they have
-//  left the room-finder. The navigation simply grows.
+//  portal: public visitors, room-booking agents and administrators share the
+//  same navigation shell.
 //
 //    * a fixed top bar with the wordmark, the campus clock and the account
 //    * a 256px side rail on desktop
@@ -32,7 +32,6 @@ import {
   Search,
   ShieldCheck,
   Sun,
-  Ticket,
   User as UserIcon,
   Users,
   X,
@@ -56,10 +55,7 @@ const PUBLIC_NAV: NavItem[] = [
 
 /** Added on top of the public items, for whoever is signed in. */
 const ROLE_NAV: Record<Role, NavItem[]> = {
-  user: [
-    { href: "/me", label: "My Bus Seat", short: "Seat", icon: <Ticket className="h-5 w-5" />, context: "bus" },
-    { href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> },
-  ],
+  user: [{ href: "/profile", label: "Profile", icon: <UserIcon className="h-5 w-5" /> }],
   admin: [
     { href: "/admin", label: "Admin Overview", short: "Admin", icon: <ShieldCheck className="h-5 w-5" /> },
     { href: "/agent", label: "Room Bookings", short: "Bookings", icon: <CalendarCheck className="h-5 w-5" />, context: "rooms" },

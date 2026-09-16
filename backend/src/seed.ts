@@ -26,7 +26,6 @@ import {
   buildings,
   driverProfiles,
   floors,
-  rideBookings,
   rooms,
   routeStops,
   subjects,
@@ -374,9 +373,8 @@ async function runSeed(options: SeedOptions = {}) {
   const counts = {
     rooms: (await db().select({ total: sql<number>`count(*)::int` }).from(rooms))[0]?.total ?? 0,
     sessions: (await db().select({ total: sql<number>`count(*)::int` }).from(timetableEntries))[0]?.total ?? 0,
-    seats: (await db().select({ total: sql<number>`count(*)::int` }).from(rideBookings))[0]?.total ?? 0,
   };
-  log(`  ready        ${counts.rooms} rooms, ${counts.sessions} weekly sessions, ${counts.seats} bus seats`);
+  log(`  ready        ${counts.rooms} rooms, ${counts.sessions} weekly sessions`);
   return counts;
 }
 

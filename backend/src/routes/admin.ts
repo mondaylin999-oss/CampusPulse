@@ -10,13 +10,12 @@
 //     academics   batches, subjects
 //     timetable   weekly entries + the conflict dry-run
 //     changes     one-date exceptions
-//     people      accounts, and the DRIVER PERMISSION QUEUE
+//     people      administrator, agent and user accounts
 // ===========================================================================
 
 import { Router } from "express";
 import { z } from "zod";
 import { listUsersByRole, createAccount, setUserStatus, setPassword } from "../accounts.js";
-import { decideApplication, listApplications, revokeDriver } from "../drivers.js";
 import { badRequest, parseBody, parseId, requireRole, route } from "../http.js";
 import {
   addFloor,
@@ -406,7 +405,7 @@ adminRouter.delete(
 );
 
 // ===========================================================================
-//  People — accounts and the driver permission queue
+//  People — accounts
 // ===========================================================================
 
 adminRouter.get(
@@ -449,30 +448,4 @@ adminRouter.patch(
     if (!input.status && !input.password) throw badRequest("Nothing to change.");
     return { success: true };
   }),
-);
-
-/** THE DRIVER PERMISSION QUEUE. */
-adminRouter.get(
-  "/driver-applications",
-  route(async req => {
-    const status = typeof req.query.status === "string" && ["pending", "approved", "rejected"].includes(req.query.status)
-      ? (req.query.status as "pending" | "approved" | "rejected")
-      : undefined;
-    return { applications: await listApplications(status) };
-  }),
-);
-
-adminRouter.patch(
-  "/driver-applications/:id",
-  route(async req => {
-    const admin = requireRole(req, "admin");
-    const input = parseBody(z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }), req.body);
-    return decideApplication({ applicationId: parseId(req.params.id), adminId: admin.id, approve: input.approve, note: input.note });
-  }),
-);
-
-/** Takes driver permission back; the account becomes an ordinary student. */
-adminRouter.post(
-  "/people/:id/revoke-driver",
-  route(async req => revokeDriver(parseId(req.params.id))),
 );

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "CampusPulse REST API — Express + PostgreSQL, with the C++ school-bus engine",
+  "description": "CampusPulse REST API — Express + PostgreSQL",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
@@ -13,7 +13,6 @@
     "serve": "node dist/src/index.js",
     "check": "tsc --noEmit",
     "seed": "tsx src/seed.ts",
-    "engine:build": "bash cpp/build.sh",
     "test": "vitest run"
   },
   "dependencies": {

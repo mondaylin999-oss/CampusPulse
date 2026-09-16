@@ -150,7 +150,7 @@ export function addDays(dateKey: string, count: number) {
 //  whole calendar month. Unchanged in behaviour from the original bus system.
 // ===========================================================================
 
-/** "YYYY-MM" on campus — the month a bus seat is sold for. */
+/** "YYYY-MM" on campus — used by a transport way's active date range. */
 export function campusMonthKey(now = new Date()) {
   return campusDateKey(now).slice(0, 7);
 }

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { ChevronDown, MapPin, Phone, UserRound } from "lucide-react";
-import { api, type RoadRow } from "@/lib/api";
+import { api, type RouteRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { kyats } from "@/lib/format";
 import { RouteMap } from "@/components/RouteMap";
 import { Card, EmptyState, ErrorNote, PageHeader, Spinner } from "@/components/ui";
 
-type Payload = { months: string[]; roads: RoadRow[] };
+type Payload = { routes: RouteRow[] };
 
-function majorNodes(road: RoadRow) {
+function majorNodes(road: RouteRow) {
   const nodes = [road.route.startPoint];
   if (!/(school|university|main gate)/i.test(road.route.destination)) nodes.push(road.route.destination);
   nodes.push("School");
@@ -16,9 +16,9 @@ function majorNodes(road: RoadRow) {
 }
 
 export default function Bus() {
-  const { data, loading, error, refresh } = useApiData<Payload>(() => api.get<Payload>("/transport/public/roads"), [], { pollMs: 60_000 });
+  const { data, loading, error, refresh } = useApiData<Payload>(() => api.get<Payload>("/transport/public/routes"), [], { pollMs: 60_000 });
   const [open, setOpen] = useState<Set<number>>(new Set());
-  const roads = data?.roads ?? [];
+  const roads = data?.routes ?? [];
 
   return <div className="space-y-stack-md">
     <PageHeader title="School bus" subtitle="Choose the township connection that meets your journey." />

@@ -177,7 +177,7 @@ export default function RouteEditor() {
             <Field label="Road name">
               <Input value={newRoad.name} onChange={event => setNewRoad({ ...newRoad, name: event.target.value })} required minLength={2} placeholder="North Hall Bus" />
             </Field>
-            <Field label="Price of one seat for a month (kyat)">
+            <Field label="Fee per month (kyat)">
               <Input type="number" min={1} step={1} value={newRoad.fareCents} onChange={event => setNewRoad({ ...newRoad, fareCents: event.target.value })} required placeholder="45000" />
             </Field>
             <Field label="First major node">
@@ -272,7 +272,7 @@ export default function RouteEditor() {
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="One seat for a month (kyat)" hint={`Now ${kyats(selected.route.fareCents)} a month`}>
+              <Field label="Fee per month (kyat)" hint={`Now ${kyats(selected.route.fareCents)} a month`}>
                 <Input type="number" min={1} step={1} value={fare} onChange={event => setFare(event.target.value)} required />
               </Field>
               <Field label="Extra map link (optional)" hint="Any https:// link. The map below needs no link at all.">

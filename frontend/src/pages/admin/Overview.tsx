@@ -2,8 +2,7 @@
 //  admin/Overview.tsx — what the office needs to see first thing.
 //
 //  Two things need answering at a glance: is the campus board healthy (are the
-//  rooms and the timetable actually there), and is anybody waiting on us —
-//  which in this platform means a driver permission request.
+//  rooms and the timetable actually there), with direct links to office tools.
 // ===========================================================================
 
 import { Link } from "wouter";

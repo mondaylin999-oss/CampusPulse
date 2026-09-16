@@ -87,7 +87,7 @@ export default function Home() {
             </span>
             <span>
               <span className="block text-[15px] font-bold text-on-surface">School Bus</span>
-              <span className="block text-[12px] text-on-surface-variant">Routes, stops, departure times and seats</span>
+              <span className="block text-[12px] text-on-surface-variant">Transport ways, pickup nodes, contacts and monthly fees</span>
             </span>
           </span>
           <ArrowRight className="h-5 w-5 shrink-0 text-on-surface-variant" />

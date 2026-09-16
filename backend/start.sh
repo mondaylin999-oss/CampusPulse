@@ -13,9 +13,4 @@ if [ ! -d node_modules ]; then
   npm install
 fi
 
-if [ ! -x cpp/build/campus_engine ]; then
-  echo "Building the C++ engine…"
-  bash cpp/build.sh || echo "C++ build failed — the API will use the TypeScript fallback."
-fi
-
 npm run dev

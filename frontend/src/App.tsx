@@ -32,9 +32,6 @@ import Login from "@/pages/Login";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 
-// ---- student ----
-import Me from "@/pages/student/Me";
-
 // ---- agents who may hold a room ----
 import MyBookings from "@/pages/agent/MyBookings";
 
@@ -94,13 +91,6 @@ export default function App() {
         <Route path="/profile">
           <Guard roles={["user", "admin", "agent"]}>
             <Profile />
-          </Guard>
-        </Route>
-
-        {/* ---------------- student ---------------- */}
-        <Route path="/me">
-          <Guard roles={["user"]}>
-            <Me />
           </Guard>
         </Route>
 

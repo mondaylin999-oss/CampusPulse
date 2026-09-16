@@ -56,8 +56,6 @@ export const ENV = {
   seedFloors: number("SEED_FLOORS", 6),
   seedRoomsPerFloor: number("SEED_ROOMS_PER_FLOOR", 6),
 
-  enginePath: text("CAMPUS_ENGINE_PATH") || text("BITEN_ENGINE_PATH"),
-  engineRequired: flag("CAMPUS_ENGINE_REQUIRED", false),
 
   loginRateLimit: number("LOGIN_RATE_LIMIT", 10),
   loginRateWindowSeconds: number("LOGIN_RATE_WINDOW_SECONDS", 60),

@@ -4,7 +4,6 @@
 //      cd backend
 //      npm install
 //      cp .env.example .env        (edit it: PostgreSQL password + JWT secret)
-//      bash cpp/build.sh           (optional — compiles the C++ bus engine)
 //      npm run dev                 (http://localhost:8000)
 //
 //  Everything is JSON over HTTP. The frontend in ../frontend finds this server
@@ -17,8 +16,7 @@
 //                   No login, no account, no cookie.
 //    /bookings/*    Holding a room. Reading is public; MAKING a booking is
 //                   for the `agent` role, granted by the administrator.
-//    /transport/*   The school bus. Public reads; booking needs a student
-//                   login; running a bus needs the administrator's approval.
+//    /transport/*   Public transport details; administrators manage routes.
 //    /auth/*        Login, registration, "who am I".
 //    /admin/*       Everything an administrator maintains.
 //
@@ -30,7 +28,6 @@ import express from "express";
 import cors from "cors";
 import { ENV, assertEnv } from "./env.js";
 import { assertSchemaInstalled, closeDatabase, pingDatabase } from "./database.js";
-import { engineMode, enginePath, callEngine } from "./engine.js";
 import { attachUser, errorMiddleware, route } from "./http.js";
 import { authRouter } from "./routes/auth.js";
 import { transportRouter } from "./routes/transport.js";
@@ -74,8 +71,6 @@ app.get(
     return {
       status: database.ok ? "ok" : "degraded",
       service: "campuspulse-api",
-      engine: engineMode(),
-      enginePath: enginePath(),
       database: database.ok ? "connected" : `unavailable: ${database.error}`,
       postgres: database.serverVersion ?? null,
       campusTime: now.label,
@@ -85,12 +80,6 @@ app.get(
       time: new Date().toISOString(),
     };
   }),
-);
-
-/** What the C++ engine reports about itself — handy when demonstrating. */
-app.get(
-  "/engine",
-  route(async () => ({ mode: engineMode(), path: enginePath(), info: await callEngine("info") })),
 );
 
 app.use("/auth", authRouter);
@@ -130,18 +119,12 @@ async function start() {
   const now = campusNow();
 
   app.listen(ENV.port, ENV.host, () => {
-    const engine = engineMode();
     console.log("\n  CampusPulse API");
     console.log("  ────────────────────────────────────────────────────────");
     console.log(`  Listening      http://localhost:${ENV.port}  (host ${ENV.host})`);
     console.log(`  Health         http://localhost:${ENV.port}/health`);
     console.log(`  Room board     http://localhost:${ENV.port}/rooms  (public, no login)`);
     console.log(`  Database       ${database.serverVersion ?? "connected"}`);
-    console.log(
-      engine === "c++"
-        ? `  Bus engine     C++  (${enginePath()})`
-        : "  Bus engine     TypeScript fallback — run  bash cpp/build.sh  to use the C++ engine",
-    );
     console.log(`  Campus clock   ${now.label}  (${now.timezone})`);
     console.log("  ────────────────────────────────────────────────────────");
     console.log("  Frontend: cd ../frontend && npm run dev\n");

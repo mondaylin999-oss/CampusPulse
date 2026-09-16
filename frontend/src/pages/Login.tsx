@@ -79,7 +79,7 @@ export default function Login() {
             </div>
             <div className="card card-pad">
               <span className="chip bg-tertiary-container text-on-tertiary-container">School bus</span>
-              <p className="mt-3 text-[14px] text-on-surface-variant">A seat for the whole month, the daily times, and the route drawn on a real map.</p>
+              <p className="mt-3 text-[14px] text-on-surface-variant">Township connections, contact details, monthly fees, and routes drawn on a real map.</p>
             </div>
           </div>
 

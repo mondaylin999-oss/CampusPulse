@@ -472,26 +472,6 @@ export type TimetableRow = {
   endTime: string;
 };
 
-export type DriverApplicationRow = {
-  application: {
-    id: number;
-    userId: number;
-    phone: string | null;
-    licenseNumber: string | null;
-    plateNumber: string | null;
-    totalSeats: number | null;
-    message: string | null;
-    status: "pending" | "approved" | "rejected";
-    decisionNote: string | null;
-    createdAt: string;
-    decidedAt: string | null;
-  };
-  applicantName: string | null;
-  applicantUsername: string | null;
-  applicantEmail: string | null;
-  applicantRole: Role;
-};
-
 // ===========================================================================
 //  School bus — unchanged from the existing system
 // ===========================================================================
@@ -529,46 +509,6 @@ export type RouteRow = {
   mapNodes: Array<{ id: number; name: string; latitude: string; longitude: string; nodeOrder: number }>;
 };
 
-export type SeatRecord = {
-  id: number;
-  routeId: number;
-  userId: number;
-  /** "YYYY-MM" */
-  month: string;
-  seatCount: number;
-  seatNumber: string | null;
-  fareCents: number;
-  status: "pending" | "confirmed" | "cancelled";
-  createdAt: string;
-};
-
-export type SeatRow = {
-  pass: SeatRecord;
-  route: RouteRow["route"] | null;
-  passengerName: string | null;
-  passengerUsername: string | null;
-  driverName: string | null;
-  driverPhone: string | null;
-};
-
-/** How one route stands in one month: seats sold, seats left, my own seat. */
-export type RoadMonthRow = {
-  month: string;
-  totalSeats: number;
-  occupiedSeats: number;
-  pendingSeats: number;
-  availableSeats: number;
-  loadPercent: number;
-  sellable: boolean;
-  ownPass: SeatRecord | null;
-};
-
-/** A route, with every month currently on sale. */
-export type RoadRow = RouteRow & {
-  vehicle: { id: number; plateNumber: string | null; totalSeats: number; status: string; monthlyFeeCents: number } | null;
-  months: RoadMonthRow[];
-};
-
 export type VehicleRow = {
   vehicle: {
     id: number;
@@ -585,30 +525,10 @@ export type VehicleRow = {
   driverUsername: string | null;
 };
 
-export type DriverRow = {
-  id: number;
-  name: string | null;
-  username: string | null;
-  email: string | null;
-  status: string;
-  phone: string | null;
-  licenseNumber: string | null;
-  availability: "available" | "unavailable" | null;
-};
-
-export type MaintenanceRow = {
-  report: { id: number; vehicleId: number; issue: string; status: "reported" | "in_progress" | "resolved"; resolutionNote: string | null; createdAt: string };
-  plateNumber: string | null;
-  driverName: string | null;
-};
-
 export type DriverDashboard = {
   profile: { profile: { id: number; phone: string | null; licenseNumber: string | null; availability: "available" | "unavailable" }; user: SessionUser } | undefined;
   vehicle: VehicleRow | null;
   routes: RouteRow[];
-  pendingBookings: SeatRow[];
-  confirmedBookings: number;
-  maintenance: MaintenanceRow[];
 };
 
 // --- small shared helpers ---------------------------------------------------

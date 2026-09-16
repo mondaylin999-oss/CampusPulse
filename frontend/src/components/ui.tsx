@@ -274,14 +274,3 @@ export function StatusBadge({ status }: { status: string }) {
   const readable = status.replace(/_/g, " ").replace(/^./, first => first.toUpperCase());
   return <Badge tone={tone}>{readable}</Badge>;
 }
-
-/** A thin load bar used for bus seat occupancy. */
-export function LoadBar({ percent, tone = "bus" }: { percent: number; tone?: Tone }) {
-  const width = Math.max(0, Math.min(100, percent));
-  const fill = tone === "rooms" ? "bg-secondary" : tone === "error" ? "bg-error" : "bg-tertiary";
-  return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high">
-      <div className={`h-full rounded-full ${fill}`} style={{ width: `${width}%` }} />
-    </div>
-  );
-}

@@ -6,7 +6,6 @@ import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { z } from "zod";
 import { extractToken, readSessionToken } from "./auth.js";
 import { getUserById, toPublicUser, type PublicUser } from "./accounts.js";
-import { EngineRuleError } from "./engine.js";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -98,7 +97,6 @@ export function parseId(value: unknown, label = "id") {
 /** One error shape for the whole API: { error: "message" }. */
 export function errorMiddleware(error: unknown, _req: Request, res: Response, _next: NextFunction) {
   if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
-  if (error instanceof EngineRuleError) return res.status(400).json({ error: error.message });
   const anyError = error as { status?: unknown; message?: unknown } | null;
   if (anyError && typeof anyError === "object" && typeof anyError.status === "number")
     return res.status(anyError.status).json({ error: String(anyError.message ?? "Request refused.") });

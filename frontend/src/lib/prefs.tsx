@@ -92,7 +92,7 @@ export function usePrefs() {
   return context;
 }
 
-/** Shorthand for the common case: `const t = useT();  t("Seat requests")`. */
+/** Shorthand for translating interface labels. */
 export function useT() {
   return usePrefs().t;
 }
