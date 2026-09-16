@@ -11,6 +11,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "../database.js";
 import { batches, buildings, floors, rooms, subjects } from "../../drizzle/schema.js";
 import { badRequest, notFound } from "../http.js";
+import type { RoomKind } from "./rooms.js";
 
 /** 3, 2, 5 -> "325". The one place the numbering rule is written down. */
 export function roomNumberFor(buildingCode: number, floorLevel: number, position: number) {
@@ -91,7 +92,7 @@ export async function createRoom(input: {
   floorLevel: number;
   position: number;
   name?: string;
-  kind?: "lecture" | "lab" | "seminar" | "studio" | "office";
+  kind?: RoomKind;
   capacity?: number;
   notes?: string;
 }) {
@@ -115,7 +116,7 @@ export async function createRoom(input: {
 
 export async function updateRoom(
   id: number,
-  input: { name?: string | null; kind?: "lecture" | "lab" | "seminar" | "studio" | "office"; capacity?: number; active?: boolean; notes?: string | null },
+  input: { name?: string | null; kind?: RoomKind; capacity?: number; active?: boolean; notes?: string | null },
 ) {
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name?.trim() || null;

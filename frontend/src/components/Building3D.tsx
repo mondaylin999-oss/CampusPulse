@@ -1,7 +1,9 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { useLocation } from "wouter";
 import { Rotate3D } from "lucide-react";
-import type { RoomCard } from "@/lib/api";
+import { ROOM_KIND_LABELS, type RoomCard } from "@/lib/api";
+
+const LIVE_ROOM_KINDS = new Set(["lecture", "lab", "seminar", "studio"]);
 
 export function Building3D({ name, rooms }: { name: string; rooms: RoomCard[] }) {
   const [, navigate] = useLocation();
@@ -37,13 +39,15 @@ export function Building3D({ name, rooms }: { name: string; rooms: RoomCard[] })
             <div className="building-3d-floor-label">F{floor}</div>
             <div className="building-3d-windows">
               {floorRooms.map(room => {
-                const neutral = room.kind !== "lecture";
+                const neutral = !LIVE_ROOM_KINDS.has(room.kind);
                 const state = neutral ? "neutral" : room.availability.status === "available" ? "available" : "occupied";
                 return <button
                   key={room.id}
                   type="button"
                   className={`building-3d-room building-3d-room-${state}`}
-                  title={neutral ? `Room ${room.roomNumber} · ${room.name ?? room.kind} · general space` : `Room ${room.roomNumber} · ${room.availability.status}`}
+                  title={neutral
+                    ? `Room ${room.roomNumber} · ${room.name ?? ROOM_KIND_LABELS[room.kind]} · neutral category`
+                    : `Room ${room.roomNumber} · ${ROOM_KIND_LABELS[room.kind]} · ${room.availability.status}`}
                   onPointerDown={event => event.stopPropagation()}
                   onClick={() => navigate(`/rooms/${room.roomNumber}`)}
                 >{room.roomNumber}</button>;
@@ -55,7 +59,7 @@ export function Building3D({ name, rooms }: { name: string; rooms: RoomCard[] })
       </div>
     </div>
     <div className="building-3d-legend">
-      <span><i className="bg-emerald-500" />Available</span><span><i className="bg-red-500" />Occupied</span><span><i className="bg-slate-400" />Department / library / general</span>
+      <span><i className="bg-emerald-500" />Available lecture room / lab</span><span><i className="bg-red-500" />Occupied lecture room / lab</span><span><i className="bg-slate-400" />Department / library / office</span>
     </div>
   </section>;
 }

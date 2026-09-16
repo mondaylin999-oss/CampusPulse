@@ -9,7 +9,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Building2, GraduationCap, Plus, Trash2 } from "lucide-react";
-import { api, ApiError, type AdminRoom, type BatchRow, type BuildingRow, type SubjectRow } from "@/lib/api";
+import { api, ApiError, ROOM_KINDS, ROOM_KIND_LABELS, type AdminRoom, type BatchRow, type BuildingRow, type RoomKind, type SubjectRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { Badge, Button, Card, EmptyState, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner } from "@/components/ui";
 
@@ -229,9 +229,9 @@ function RoomsCard({
         </Field>
         <Field label="Kind">
           <Select value={form.kind} onChange={event => setForm({ ...form, kind: event.target.value })}>
-            {["lecture", "lab", "seminar", "studio", "office"].map(kind => (
+            {ROOM_KINDS.map(kind => (
               <option key={kind} value={kind}>
-                {kind}
+                {ROOM_KIND_LABELS[kind]}
               </option>
             ))}
           </Select>
@@ -269,7 +269,24 @@ function RoomsCard({
                   <td className="tabular font-semibold">{row.room.roomNumber}</td>
                   <td>{row.buildingName}</td>
                   <td className="tabular">{row.room.floorLevel}</td>
-                  <td>{row.room.kind}</td>
+                  <td>
+                    <Select
+                      className="h-9 min-w-36"
+                      aria-label={`Category for room ${row.room.roomNumber}`}
+                      value={row.room.kind}
+                      onChange={async event => {
+                        try {
+                          const kind = event.target.value as RoomKind;
+                          await api.patch(`/admin/rooms/${row.room.id}`, { kind });
+                          await onChanged(`Room ${row.room.roomNumber} changed to ${ROOM_KIND_LABELS[kind]}.`);
+                        } catch (caught) {
+                          onError(caught);
+                        }
+                      }}
+                    >
+                      {ROOM_KINDS.map(kind => <option key={kind} value={kind}>{ROOM_KIND_LABELS[kind]}</option>)}
+                    </Select>
+                  </td>
                   <td className="tabular text-right">{row.room.capacity}</td>
                   <td>
                     <button

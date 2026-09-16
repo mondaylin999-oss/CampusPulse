@@ -14,7 +14,7 @@
 
 import { Link } from "wouter";
 import { Clock, DoorClosed, DoorOpen } from "lucide-react";
-import type { EffectiveSession, RoomAvailability, RoomCard } from "@/lib/api";
+import { ROOM_KIND_LABELS, type EffectiveSession, type RoomAvailability, type RoomCard } from "@/lib/api";
 
 type Tone = "available" | "soon" | "occupied" | "closed";
 
@@ -95,7 +95,7 @@ export function RoomTile({ room }: { room: RoomCard }) {
         <div className="min-w-0">
           <p className="tabular text-[22px] font-bold leading-none text-on-surface">{room.roomNumber}</p>
           <p className="mt-1 truncate text-[12px] text-on-surface-variant">
-            {room.name ?? room.buildingName} · floor {room.floorLevel}
+            {room.name ?? ROOM_KIND_LABELS[room.kind]} · {room.buildingName} · floor {room.floorLevel}
           </p>
         </div>
         <StatusPill availability={room.availability} />

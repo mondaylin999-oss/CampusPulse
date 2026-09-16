@@ -288,7 +288,7 @@ export type RoomCard = {
   buildingName: string;
   floorLevel: number;
   name: string | null;
-  kind: string;
+  kind: RoomKind;
   capacity: number;
   availability: RoomAvailability;
 };
@@ -342,8 +342,17 @@ export type BuildingOverview = {
   buildings: BuildingRow[];
 };
 
-export const ROOM_KINDS = ["lecture", "lab", "seminar", "studio", "office"] as const;
+export const ROOM_KINDS = ["lecture", "department", "library", "lab", "office", "seminar", "studio"] as const;
 export type RoomKind = (typeof ROOM_KINDS)[number];
+export const ROOM_KIND_LABELS: Record<RoomKind, string> = {
+  lecture: "Lecture Room",
+  department: "Department",
+  library: "Library",
+  lab: "Lab",
+  office: "Office",
+  seminar: "Seminar Room",
+  studio: "Studio",
+};
 
 export type RoomDetail = {
   moment: Moment;
@@ -354,7 +363,7 @@ export type RoomDetail = {
     floorLevel: number;
     position: number;
     name: string | null;
-    kind: string;
+    kind: RoomKind;
     capacity: number;
     notes: string | null;
     active: boolean;
@@ -425,7 +434,7 @@ export type AdminRoom = {
     floorLevel: number;
     position: number;
     name: string | null;
-    kind: string;
+    kind: RoomKind;
     capacity: number;
     active: boolean;
     notes: string | null;

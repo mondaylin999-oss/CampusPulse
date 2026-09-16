@@ -9,7 +9,7 @@
 import { useRoute } from "wouter";
 import { Link } from "wouter";
 import { ArrowLeft, Building2, CalendarDays, Users } from "lucide-react";
-import { api, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/api";
+import { api, ROOM_KIND_LABELS, type RoomDetail as RoomDetailPayload, type RoomWeek } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { AvailabilityLine, SessionRow, StatusPill } from "@/components/rooms";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -86,7 +86,7 @@ export default function RoomDetail() {
             <Users className="h-3.5 w-3.5" /> Seats {room.capacity}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Building2 className="h-3.5 w-3.5" /> {room.kind}
+            <Building2 className="h-3.5 w-3.5" /> {ROOM_KIND_LABELS[room.kind]}
           </span>
           <span className="inline-flex items-center gap-1">
             <CalendarDays className="h-3.5 w-3.5" /> {moment.dateLabel} · {moment.clock}

@@ -29,7 +29,8 @@ import {
 const bookingOwner = alias(users, "booking_owner");
 
 /** The kinds a room may be. Mirrors the room_kind enum in schema.sql. */
-export const ROOM_KINDS = ["lecture", "lab", "seminar", "studio", "office"] as const;
+export const ROOM_KINDS = ["lecture", "department", "library", "lab", "office", "seminar", "studio"] as const;
+export type RoomKind = (typeof ROOM_KINDS)[number];
 
 // --- the shape the frontend receives ---------------------------------------
 
@@ -58,7 +59,7 @@ export type BoardFilter = {
   availableOnly?: boolean;
   /** Only rooms free for at least this many minutes from `minute`. */
   minFreeMinutes?: number;
-  /** Only rooms of this kind: lecture, lab, seminar, studio, office. */
+  /** Only rooms of this category. */
   kind?: string;
   /** Only rooms that seat at least this many people. */
   minCapacity?: number;

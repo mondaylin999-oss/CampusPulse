@@ -64,6 +64,10 @@ DO $$ BEGIN CREATE TYPE booking_status       AS ENUM ('pending', 'confirmed', 'c
 DO $$ BEGIN CREATE TYPE application_status   AS ENUM ('pending', 'approved', 'rejected');           EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- The room half.
 DO $$ BEGIN CREATE TYPE room_kind            AS ENUM ('lecture', 'lab', 'seminar', 'studio', 'office'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- Existing hosted databases keep their enum when CREATE TYPE is skipped, so
+-- add newly supported categories separately as an idempotent migration.
+ALTER TYPE room_kind ADD VALUE IF NOT EXISTS 'department';
+ALTER TYPE room_kind ADD VALUE IF NOT EXISTS 'library';
 DO $$ BEGIN CREATE TYPE exception_kind       AS ENUM ('cancel', 'move_room', 'retime', 'extra', 'holiday', 'room_closed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ---------------------------------------------------------------------------

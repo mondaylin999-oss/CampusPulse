@@ -10,7 +10,7 @@
 import { useMemo, useState } from "react";
 import { useSearch } from "wouter";
 import { Filter, Search } from "lucide-react";
-import { api, ROOM_KINDS, type BuildingOverview, type RoomBoard } from "@/lib/api";
+import { api, ROOM_KINDS, ROOM_KIND_LABELS, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
 import { NOW, WhenPicker, isNow, whenQuery, type When } from "@/components/WhenPicker";
@@ -159,7 +159,7 @@ export default function FindRoom() {
               <option value="">Any type</option>
               {ROOM_KINDS.map(option => (
                 <option key={option} value={option}>
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                  {ROOM_KIND_LABELS[option]}
                 </option>
               ))}
             </Select>

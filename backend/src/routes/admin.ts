@@ -65,7 +65,7 @@ adminRouter.use((req, _res, next) => {
 // --- small shared validators ------------------------------------------------
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Dates look like 2026-09-14.");
-const roomKind = z.enum(["lecture", "lab", "seminar", "studio", "office"]);
+const roomKind = z.enum(["lecture", "department", "library", "lab", "office", "seminar", "studio"]);
 
 /**
  * A time may arrive as "09:00" or as 540. The admin UI sends the former and

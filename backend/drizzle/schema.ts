@@ -26,7 +26,7 @@ export const maintenanceStatusEnum = pgEnum("maintenance_status", ["reported", "
 export const routeStatusEnum = pgEnum("route_status", ["active", "inactive"]);
 export const driverAvailabilityEnum = pgEnum("driver_availability", ["available", "unavailable"]);
 export const bookingStatusEnum = pgEnum("booking_status", ["pending", "confirmed", "cancelled"]);
-export const roomKindEnum = pgEnum("room_kind", ["lecture", "lab", "seminar", "studio", "office"]);
+export const roomKindEnum = pgEnum("room_kind", ["lecture", "department", "library", "lab", "office", "seminar", "studio"]);
 export const exceptionKindEnum = pgEnum("exception_kind", ["cancel", "move_room", "retime", "extra", "holiday", "room_closed"]);
 
 // ===========================================================================
