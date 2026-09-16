@@ -12,6 +12,7 @@ import { Building2, ChevronRight } from "lucide-react";
 import { api, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
+import { Building3D } from "@/components/Building3D";
 import { Card, EmptyState, ErrorNote, Notice, PageHeader, Spinner } from "@/components/ui";
 
 export default function Buildings() {
@@ -33,6 +34,11 @@ export default function Buildings() {
   const board = useApiData<RoomBoard>(
     () => api.get<RoomBoard>("/rooms", { building: buildingCode ?? undefined, floor: floorLevel ?? undefined }),
     [buildingCode, floorLevel],
+    { pollMs: 60_000 },
+  );
+  const buildingBoard = useApiData<RoomBoard>(
+    () => api.get<RoomBoard>("/rooms", { building: buildingCode ?? undefined }),
+    [buildingCode],
     { pollMs: 60_000 },
   );
 
@@ -117,6 +123,8 @@ export default function Buildings() {
       {board.data && building ? (
         <>
           <PulseCounters available={board.data.summary.available} occupied={board.data.summary.occupied} total={board.data.summary.total} />
+
+          {buildingBoard.data?.rooms.length ? <Building3D name={building.name} rooms={buildingBoard.data.rooms} /> : null}
 
           <Card
             title={floorLevel ? `${building.name} — Floor ${floorLevel}` : building.name}

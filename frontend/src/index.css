@@ -500,3 +500,29 @@ html.dark .leaflet-control-zoom a {
 .leaflet-routing-container {
   display: none;
 }
+
+/* Rotatable building diagram. The campus photograph sits softly behind a
+   schematic facade; live room state remains readable at every angle. */
+.building-3d-shell { position: relative; overflow: hidden; min-height: 510px; border: 1px solid var(--color-outline-variant); border-radius: 16px; background: var(--color-surface-container-low); isolation: isolate; }
+.building-3d-photo { position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 40%, transparent), var(--color-surface) 94%), url('/uit-campus.jpeg') center/cover; opacity: .32; z-index: -1; }
+.building-3d-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 18px 20px; }
+.building-3d-head h3 { color: var(--color-on-surface); font-size: 17px; font-weight: 700; }
+.building-3d-head p { margin-top: 2px; color: var(--color-on-surface-variant); font-size: 12px; }
+.building-3d-head span { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--color-outline-variant); border-radius: 999px; padding: 6px 10px; color: var(--color-on-surface-variant); font-size: 12px; font-weight: 600; }
+.building-3d-stage { height: 370px; display: grid; place-items: center; perspective: 900px; cursor: grab; touch-action: none; user-select: none; }
+.building-3d-stage:active { cursor: grabbing; }
+.building-3d-model { position: relative; width: min(680px, 76vw); height: 70px; transform-style: preserve-3d; transition: transform 80ms linear; }
+.building-3d-floor { position: absolute; left: 0; top: 50%; width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 7px 12px; border: 1px solid rgba(148,163,184,.6); border-left: 8px solid #64748b; background: color-mix(in srgb, var(--color-surface-container-lowest) 92%, transparent); box-shadow: 0 8px 18px rgba(0,0,0,.16); transform-style: preserve-3d; }
+.building-3d-floor::after { content: ''; position: absolute; right: -22px; top: 8px; width: 22px; height: 100%; background: rgba(71,85,105,.55); transform: skewY(-34deg); transform-origin: left top; }
+.building-3d-floor-label { width: 30px; color: var(--color-on-surface-variant); font-size: 11px; font-weight: 800; }
+.building-3d-windows { flex: 1; display: grid; grid-template-columns: repeat(6, minmax(44px, 1fr)); gap: 7px; }
+.building-3d-room { min-height: 31px; border: 1px solid rgba(255,255,255,.32); border-radius: 4px; color: white; font-size: 11px; font-weight: 800; box-shadow: inset 0 1px rgba(255,255,255,.25); transition: transform 120ms, filter 120ms; }
+.building-3d-room:hover, .building-3d-room:focus-visible { transform: translateZ(10px) scale(1.06); filter: brightness(1.14); outline: 2px solid white; outline-offset: 1px; }
+.building-3d-room-available { background: #059669; }
+.building-3d-room-occupied { background: #dc2626; }
+.building-3d-room-neutral { background: #64748b; }
+.building-3d-roof { position: absolute; left: -3%; top: -168px; width: 106%; height: 46px; background: rgba(226,232,240,.92); border: 1px solid #94a3b8; transform: rotateX(72deg) translateZ(23px); transform-origin: bottom; box-shadow: 0 16px 28px rgba(0,0,0,.15); }
+.building-3d-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; padding: 0 18px 16px; color: var(--color-on-surface-variant); font-size: 12px; }
+.building-3d-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.building-3d-legend i { width: 10px; height: 10px; border-radius: 3px; }
+@media (max-width: 640px) { .building-3d-shell { min-height: 455px; } .building-3d-stage { height: 315px; } .building-3d-model { width: 620px; transform-origin: center; } .building-3d-room { font-size: 9px; } }
