@@ -64,7 +64,7 @@ export default function Timetable() {
                   const row = bySlot.get(`${day}-${period.start}`);
                   return <td key={period.start} className="h-28 align-top text-center">{row ? (
                     <div className="space-y-1 rounded-lg bg-primary-container/60 p-2 text-on-primary-container">
-                      <p className="font-bold">{row.subjectCode ?? "Class"}{row.entry.title ? ` (${row.entry.title})` : ""}</p>
+                      <p className="font-bold">{row.subjectCode ?? "Class"}{row.entry.title && !row.entry.title.startsWith("DEPT:") ? ` (${row.entry.title})` : ""}</p>
                       {row.subjectName ? <p className="text-[11px] leading-tight">{row.subjectName}</p> : null}
                       <p className="inline-flex items-center gap-1 font-semibold"><MapPin className="h-3 w-3" />Room {row.roomNumber}</p>
                       {row.entry.teacher ? <p className="text-[11px]">{row.entry.teacher}</p> : null}

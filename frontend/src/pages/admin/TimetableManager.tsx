@@ -26,7 +26,7 @@ const PERIODS = [
   { label: "Period 6 · 3:00–4:00", start: "15:00", end: "16:00" },
 ] as const;
 
-type GridCell = { roomId: string; subjectId: string; title: string; teacher: string };
+type GridCell = { roomId: string; subjectId: string; title: string; teacher: string; department: string };
 
 function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; subjects: SubjectRow[]; rooms: AdminRoom[] }) {
   const [batchId, setBatchId] = useState("");
@@ -47,7 +47,9 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
       const period = PERIODS.findIndex(item => item.start === row.startTime && item.end === row.endTime);
       if (period >= 0) next[`${row.entry.dayOfWeek}-${period}`] = {
         roomId: String(row.entry.roomId), subjectId: row.entry.subjectId ? String(row.entry.subjectId) : "",
-        title: row.entry.title ?? "L", teacher: row.entry.teacher ?? "",
+        title: row.entry.title?.startsWith("DEPT:") ? "" : (row.entry.title ?? ""),
+        teacher: row.entry.title?.startsWith("DEPT:") ? "" : (row.entry.teacher ?? ""),
+        department: row.entry.title?.startsWith("DEPT:") ? row.entry.title.slice(5) : "",
       };
     }
     setCells(next);
@@ -55,7 +57,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
   }, [timetable.data]);
 
   const change = (key: string, patch: Partial<GridCell>) => {
-    setCells(current => ({ ...current, [key]: { ...(current[key] ?? { roomId: "", subjectId: "", title: "L", teacher: "" }), ...patch } }));
+    setCells(current => ({ ...current, [key]: { ...(current[key] ?? { roomId: "", subjectId: "", title: "", teacher: "", department: "" }), ...patch } }));
     setDirty(current => new Set(current).add(key));
   };
 
@@ -72,7 +74,8 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
           if (old) await api.delete(`/admin/timetable/${old.entry.id}`);
           continue;
         }
-        const body = { roomId: Number(cell.roomId), batchId: Number(batchId), subjectId: Number(cell.subjectId), title: cell.title || "L", teacher: cell.teacher.trim() || null, dayOfWeek, startMinute: period.start, endMinute: period.end, effectiveFrom: null, effectiveTo: null };
+        const department = cell.department.trim();
+        const body = { roomId: Number(cell.roomId), batchId: Number(batchId), subjectId: Number(cell.subjectId), title: department ? `DEPT:${department}` : (cell.title || "L"), teacher: department ? `${department} Department` : (cell.teacher.trim() || null), dayOfWeek, startMinute: period.start, endMinute: period.end, effectiveFrom: null, effectiveTo: null };
         if (old) await api.patch(`/admin/timetable/${old.entry.id}`, body); else await api.post("/admin/timetable", body);
       }
       setMessage({ tone: "rooms", text: `Saved ${dirty.size} changed cell${dirty.size === 1 ? "" : "s"}.` });
@@ -94,11 +97,17 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     <div className="overflow-x-auto"><table className="data-table min-w-[1320px] table-fixed">
       <thead><tr><th className="w-28">Day</th>{PERIODS.map(period => <th key={period.label} className="text-center">{period.label}</th>)}</tr></thead>
       <tbody>{[1,2,3,4,5].map(day => <tr key={day}><th>{DAY_NAMES[day]}</th>{PERIODS.map((_period, index) => {
-        const key = `${day}-${index}`; const cell = cells[key] ?? { roomId: "", subjectId: "", title: "L", teacher: "" };
+        const key = `${day}-${index}`; const cell = cells[key] ?? { roomId: "", subjectId: "", title: "", teacher: "", department: "" };
+        const hasLecture = Boolean(cell.title || cell.teacher.trim());
+        const hasDepartment = Boolean(cell.department.trim());
         return <td key={key} className={`space-y-1.5 align-top ${dirty.has(key) ? "bg-warning-container/30" : ""}`}>
           <Select aria-label={`${DAY_NAMES[day]} period ${index + 1} subject`} value={cell.subjectId} onChange={event => change(key, { subjectId: event.target.value })}><option value="">Empty</option>{subjects.map(row => <option key={row.id} value={row.id}>{row.code}</option>)}</Select>
           <Select aria-label={`${DAY_NAMES[day]} period ${index + 1} room`} value={cell.roomId} onChange={event => change(key, { roomId: event.target.value })}><option value="">Room</option>{rooms.map(row => <option key={row.room.id} value={row.room.id}>{row.room.roomNumber}</option>)}</Select>
-          <div className="grid grid-cols-[70px_1fr] gap-1"><Select aria-label="Class type" value={cell.title} onChange={event => change(key, { title: event.target.value })}><option value="L">L</option><option value="TDA">TDA</option></Select><Input aria-label="Lecturer" placeholder="Lecturer" value={cell.teacher} onChange={event => change(key, { teacher: event.target.value })} /></div>
+          <div className="grid grid-cols-[78px_1fr] gap-1">
+            <Select aria-label="Class type" value={cell.title} disabled={hasDepartment} onChange={event => change(key, { title: event.target.value, department: "" })}><option value="">Type</option><option value="L">L</option><option value="TDA">TDA</option></Select>
+            <Input aria-label="Lecturer" placeholder="Lecturer" value={cell.teacher} disabled={hasDepartment} onChange={event => change(key, { teacher: event.target.value, department: "" })} />
+          </div>
+          <Input aria-label="Department" placeholder="Department (Myanmar, English…)" value={cell.department} disabled={hasLecture} onChange={event => change(key, { department: event.target.value, title: "", teacher: "" })} />
         </td>;
       })}</tr>)}</tbody>
     </table></div>
