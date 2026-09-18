@@ -6,7 +6,7 @@
 //
 //  Both are remembered in this browser (localStorage), so a student on their
 //  phone and the office on its desktop each keep their own choice. The theme
-//  starts from what the device itself prefers; the language starts in English.
+//  starts in the brighter university theme; the language starts in English.
 //
 //  Nothing here talks to the server: these are per-person, per-device choices,
 //  not account settings, so switching is instant and works while signed out.
@@ -29,7 +29,9 @@ type Prefs = {
 const PrefsContext = createContext<Prefs | null>(null);
 
 const LANGUAGE_KEY = "campuspulse_language";
-const THEME_KEY = "campuspulse_theme";
+// Versioned so browsers that previously defaulted to dark receive the new
+// bright university theme once. A later manual dark-mode choice is remembered.
+const THEME_KEY = "campuspulse_theme_v2";
 
 function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
@@ -41,17 +43,9 @@ function readStored<T extends string>(key: string, allowed: readonly T[], fallba
   return fallback;
 }
 
-function devicePrefersDark() {
-  try {
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
-  } catch {
-    return false;
-  }
-}
-
 export function PrefsProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(() => readStored(LANGUAGE_KEY, ["en", "my"] as const, "en"));
-  const [theme, setTheme] = useState<Theme>(() => readStored(THEME_KEY, ["light", "dark"] as const, devicePrefersDark() ? "dark" : "light"));
+  const [theme, setTheme] = useState<Theme>(() => readStored(THEME_KEY, ["light", "dark"] as const, "light"));
 
   // The theme is a class on <html>, which is what index.css keys its dark
   // palette off. Setting it here means every screen follows at once.

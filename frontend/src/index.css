@@ -6,7 +6,7 @@
    bg-surface, text-on-surface-variant, bg-secondary-container…
 
    Colour logic:
-     Core UI        near-black   navigation, headings, primary actions
+     Core UI        university blue   navigation, headings, primary actions
      Rooms          emerald      AVAILABLE rooms, free time, "yes" states
      School bus     blue         routes, seats, departure times
      Alerts         amber / red  OCCUPIED rooms, closures, delays
@@ -16,54 +16,54 @@
 
 @theme {
   /* --- surfaces ------------------------------------------------------- */
-  --color-surface: #f7f9fb;
-  --color-surface-dim: #d8dadc;
-  --color-surface-bright: #f7f9fb;
+  --color-surface: #f4f7fb;
+  --color-surface-dim: #e5eaf1;
+  --color-surface-bright: #ffffff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f2f4f6;
-  --color-surface-container: #eceef0;
-  --color-surface-container-high: #e6e8ea;
-  --color-surface-container-highest: #e0e3e5;
-  --color-surface-variant: #e0e3e5;
-  --color-background: #f7f9fb;
+  --color-surface-container-low: #f8fafc;
+  --color-surface-container: #f1f5f9;
+  --color-surface-container-high: #eaf0f6;
+  --color-surface-container-highest: #e2e8f0;
+  --color-surface-variant: #e2e8f0;
+  --color-background: #f4f7fb;
 
   /* --- foreground ----------------------------------------------------- */
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #45464d;
-  --color-on-background: #191c1e;
-  --color-inverse-surface: #2d3133;
-  --color-inverse-on-surface: #eff1f3;
-  --color-outline: #76777d;
-  --color-outline-variant: #c6c6cd;
+  --color-on-surface: #172033;
+  --color-on-surface-variant: #5b6678;
+  --color-on-background: #172033;
+  --color-inverse-surface: #172033;
+  --color-inverse-on-surface: #f8fafc;
+  --color-outline: #8793a5;
+  --color-outline-variant: #d8e0ea;
 
   /* --- primary (core UI) ---------------------------------------------- */
-  --color-primary: #000000;
+  --color-primary: #174b8c;
   --color-on-primary: #ffffff;
-  --color-primary-container: #131b2e;
-  --color-on-primary-container: #7c839b;
-  --color-inverse-primary: #bec6e0;
-  --color-primary-fixed: #dae2fd;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-on-primary-fixed: #131b2e;
-  --color-on-primary-fixed-variant: #3f465c;
+  --color-primary-container: #dbeafe;
+  --color-on-primary-container: #12355b;
+  --color-inverse-primary: #a9c7f5;
+  --color-primary-fixed: #dbeafe;
+  --color-primary-fixed-dim: #bfdbfe;
+  --color-on-primary-fixed: #102a4c;
+  --color-on-primary-fixed-variant: #174b8c;
 
   /* --- secondary (rooms: available, free, yes) ------------------------- */
-  --color-secondary: #006c49;
+  --color-secondary: #16845b;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #6cf8bb;
-  --color-on-secondary-container: #00714d;
-  --color-secondary-fixed: #6ffbbe;
-  --color-secondary-fixed-dim: #4edea3;
+  --color-secondary-container: #dcfce7;
+  --color-on-secondary-container: #166534;
+  --color-secondary-fixed: #dcfce7;
+  --color-secondary-fixed-dim: #86efac;
   --color-on-secondary-fixed: #002113;
   --color-on-secondary-fixed-variant: #005236;
 
   /* --- tertiary (school bus) ------------------------------------------- */
-  --color-tertiary: #0b4a75;
+  --color-tertiary: #0369a1;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #cce5ff;
-  --color-on-tertiary-container: #00405f;
-  --color-tertiary-fixed: #cce5ff;
-  --color-tertiary-fixed-dim: #93ccff;
+  --color-tertiary-container: #e0f2fe;
+  --color-on-tertiary-container: #075985;
+  --color-tertiary-fixed: #e0f2fe;
+  --color-tertiary-fixed-dim: #7dd3fc;
   --color-on-tertiary-fixed: #001d31;
   --color-on-tertiary-fixed-variant: #004b73;
 
@@ -110,8 +110,8 @@
   --spacing-stack-lg: 32px;
 
   /* --- elevation ------------------------------------------------------- */
-  --shadow-card: 0 4px 12px rgb(0 0 0 / 0.02);
-  --shadow-raised: 0 12px 24px rgb(0 0 0 / 0.05);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px rgb(15 23 42 / 0.04);
+  --shadow-raised: 0 18px 44px rgb(15 23 42 / 0.12);
 }
 
 /* --------------------------------------------------------------------------
@@ -223,7 +223,7 @@ html.dark .leaflet-control-zoom a {
 
   body {
     margin: 0;
-    background: var(--color-surface);
+    background: linear-gradient(180deg, var(--color-surface-bright) 0, var(--color-surface) 260px);
     color: var(--color-on-surface);
     font-family: var(--font-sans);
     font-size: 16px;
@@ -239,12 +239,12 @@ html.dark .leaflet-control-zoom a {
   }
 
   ::selection {
-    background: var(--color-secondary-container);
-    color: var(--color-on-secondary-container);
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-secondary);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
   }
 }
@@ -306,17 +306,17 @@ html.dark .leaflet-control-zoom a {
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: var(--color-primary-container);
+    background: color-mix(in srgb, var(--color-primary) 84%, #000);
   }
 
-  /* Emerald: "this room is free / go ahead". */
+  /* General actions stay university blue; emerald is reserved for room status. */
   .btn-rooms {
-    background: var(--color-secondary);
-    color: var(--color-on-secondary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   .btn-rooms:hover:not(:disabled) {
-    background: var(--color-on-secondary-container);
+    background: color-mix(in srgb, var(--color-primary) 84%, #000);
   }
 
   .btn-bus {
@@ -373,8 +373,8 @@ html.dark .leaflet-control-zoom a {
 
   .input:focus {
     outline: none;
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-secondary) 30%, transparent);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
   }
 
   /* Alternating rows, as the design's data-table rule asks. */
@@ -432,8 +432,8 @@ html.dark .leaflet-control-zoom a {
   }
 
   .nav-item-active {
-    background: var(--color-secondary-container);
-    color: var(--color-on-secondary-container);
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
   }
 
   .nav-item-active-bus {

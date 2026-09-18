@@ -118,9 +118,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface/90">
       {/* ---------- top bar ---------- */}
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-outline-variant bg-surface-container-lowest px-gutter">
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-outline-variant bg-surface-container-lowest/95 px-gutter shadow-[0_1px_12px_rgb(15_23_42/0.04)] backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
           <button
             className="rounded-full p-2 text-on-surface hover:bg-surface-container-high md:hidden"
@@ -189,7 +189,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ---------- desktop side rail ---------- */}
-      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-64px)] w-64 flex-col border-r border-outline-variant bg-surface-container-low p-stack-md md:flex">
+      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-64px)] w-64 flex-col border-r border-outline-variant bg-surface-container-lowest p-stack-md md:flex">
         <nav className="flex-1 space-y-1 overflow-y-auto kds-scroll">
           <p className="px-3 pb-1 pt-2 text-label font-semibold uppercase tracking-wider text-on-surface-variant">{t("Campus")}</p>
           {PUBLIC_NAV.map(item => navLink(item))}
@@ -247,7 +247,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={item.href}
               href={item.href}
               className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-semibold ${
-                active ? (item.context === "bus" ? "text-tertiary" : "text-secondary") : "text-on-surface-variant"
+                active ? (item.context === "bus" ? "text-tertiary" : "text-primary") : "text-on-surface-variant"
               }`}
             >
               {item.icon}
