@@ -93,12 +93,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const items = useMemo(() => [...PUBLIC_NAV, ...(user ? ROLE_NAV[user.role] : [])], [user]);
 
-  // On a phone the bottom bar has room for five. The public items come first,
-  // and a signed-in person's own screen takes the last slot.
-  const bottomItems = useMemo(() => {
-    const roleFirst = user ? ROLE_NAV[user.role][0] : null;
-    return roleFirst ? [...PUBLIC_NAV.slice(0, 4), roleFirst] : PUBLIC_NAV;
-  }, [user]);
+  // Keep the four everyday student actions in fixed positions. Everything
+  // else lives behind More, so signing in never makes the navigation jump.
+  const bottomItems = [PUBLIC_NAV[0]!, PUBLIC_NAV[1]!, PUBLIC_NAV[3]!, PUBLIC_NAV[4]!];
+  const moreIsActive = !bottomItems.some(item => isActive(location, item.href));
 
   const navLink = (item: NavItem, onNavigate?: () => void) => {
     const active = isActive(location, item.href);
@@ -122,13 +120,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ---------- top bar ---------- */}
       <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center justify-between gap-3 border-b border-outline-variant bg-surface-container-lowest/95 px-gutter shadow-[0_1px_12px_rgb(15_23_42/0.04)] backdrop-blur">
         <div className="flex min-w-0 items-center gap-3">
-          <button
-            className="rounded-full p-2 text-on-surface hover:bg-surface-container-high md:hidden"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open navigation"
-          >
-            <MenuIcon className="h-5 w-5" />
-          </button>
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-on-primary">
               <DoorOpen className="h-5 w-5" />
@@ -255,6 +246,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           );
         })}
+        <button
+          type="button"
+          className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] font-semibold ${
+            drawerOpen || moreIsActive ? "text-primary" : "text-on-surface-variant"
+          }`}
+          onClick={() => setDrawerOpen(true)}
+          aria-label={t("More")}
+          aria-expanded={drawerOpen}
+        >
+          <MenuIcon className="h-5 w-5" />
+          <span>{t("More")}</span>
+        </button>
       </nav>
     </div>
   );
