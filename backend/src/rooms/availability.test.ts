@@ -13,6 +13,7 @@ import {
   effectiveSessionsForDate,
   findTimetableConflicts,
   freeForWindow,
+  nextClassBreak,
   roomAvailabilityAt,
   type BookingRow,
   type ExceptionRow,
@@ -159,6 +160,22 @@ describe("exceptions", () => {
     const status = roomAvailabilityAt(sessionsFor(326, closed), 11 * 60);
     expect(status.status).toBe("closed");
     expect(status.current?.note).toBe("Water leak");
+  });
+});
+
+describe("campus-level insights", () => {
+  it("finds the next cluster of rooms that will be free together", () => {
+    const rooms = [
+      { availability: { status: "occupied", freeAtMinute: 10 * 60 + 40 } },
+      { availability: { status: "occupied", freeAtMinute: 10 * 60 + 40 } },
+      { availability: { status: "occupied", freeAtMinute: 11 * 60 } },
+      { availability: { status: "available", freeAtMinute: null } },
+    ] as any[];
+
+    expect(nextClassBreak(rooms, 10 * 60)).toEqual({
+      count: 2,
+      freeAtTime: "10:40",
+    });
   });
 });
 

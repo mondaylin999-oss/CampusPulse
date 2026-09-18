@@ -17,6 +17,7 @@ import { campusNow, dateLabel, isDateKey, isoDayOfWeek, minutesToClock } from ".
 import {
   effectiveSessionsForDate,
   freeForWindow,
+  nextClassBreak,
   roomAvailabilityAt,
   type BookingRow,
   type EffectiveSession,
@@ -481,6 +482,7 @@ export async function getCampusPulse() {
     moment: board.moment,
     holiday: board.holiday,
     ...board.summary,
+    nextBreak: nextClassBreak(board.rooms, board.moment.minute),
     /** A handful of free rooms to show without loading the whole board. */
     sample: board.rooms
       .filter(card => card.availability.status === "available")

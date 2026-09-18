@@ -320,6 +320,40 @@ export function effectiveSessionsForDate(input: {
  * the teaching day when nothing else is booked. That is the number a student
  * actually needs: "will it stay free long enough for me to use it?"
  */
+export function nextClassBreak(
+  rooms: Array<{ availability?: { status?: string; freeAtMinute?: number | null } }>,
+  minuteOfDay: number,
+) {
+  const byMinute = new Map<number, number>();
+
+  for (const room of rooms) {
+    const status = room.availability?.status;
+    const freeAtMinute = room.availability?.freeAtMinute ?? null;
+
+    if (!freeAtMinute || status === "available" || status === "closed") continue;
+    if (freeAtMinute < minuteOfDay) continue;
+
+    byMinute.set(freeAtMinute, (byMinute.get(freeAtMinute) ?? 0) + 1);
+  }
+
+  if (!byMinute.size) return null;
+
+  let bestMinute = 0;
+  let bestCount = 0;
+
+  for (const [freeAtMinute, count] of byMinute.entries()) {
+    if (count > bestCount || (count === bestCount && freeAtMinute < bestMinute)) {
+      bestMinute = freeAtMinute;
+      bestCount = count;
+    }
+  }
+
+  return {
+    count: bestCount,
+    freeAtTime: minutesToClock(bestMinute),
+  };
+}
+
 export function roomAvailabilityAt(
   sessions: EffectiveSession[],
   minuteOfDay: number,

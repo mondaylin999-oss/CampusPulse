@@ -318,6 +318,7 @@ export type CampusPulseSummary = {
   available: number;
   occupied: number;
   closed: number;
+  nextBreak: { count: number; freeAtTime: string } | null;
   sample: Array<{ roomNumber: string; buildingName: string; floorLevel: number; freeForMinutes: number; freeForLabel: string; nextAt: string | null }>;
 };
 

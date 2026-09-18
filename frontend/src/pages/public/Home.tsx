@@ -104,6 +104,15 @@ export default function Home() {
 
           <PulseCounters available={data.available} occupied={data.occupied} total={data.total} />
 
+          {data.nextBreak ? (
+            <div className="card card-pad border-primary/30 bg-primary/5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">Next class break</p>
+              <p className="mt-2 text-[22px] font-bold leading-tight text-on-surface">
+                <span className="tabular text-primary">{data.nextBreak.count}</span> rooms free after <span className="tabular text-primary">{data.nextBreak.freeAtTime}</span>
+              </p>
+            </div>
+          ) : null}
+
           <Card
             title="Free right now"
             subtitle={`${data.moment.dateLabel} · ${data.moment.clock}`}
