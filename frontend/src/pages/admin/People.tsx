@@ -33,7 +33,7 @@ export default function AdminPeople() {
 
   return (
     <div className="space-y-stack-md">
-      <PageHeader title="People & agents" subtitle="Manage administrator, room-booking agent, and student accounts." />
+      <PageHeader title="People & Agents" subtitle="Manage administrator, agent, and student accounts." />
 
       {note ? <Notice tone={note.tone}>{note.text}</Notice> : null}
 
@@ -91,7 +91,7 @@ export default function AdminPeople() {
         ? (
             [
               { title: "Administrators", rows: people.data.admins, kind: "admin" as const },
-              { title: "Agents who may book rooms", rows: people.data.agents, kind: "agent" as const },
+              { title: "Agents", rows: people.data.agents, kind: "agent" as const },
               { title: "Students", rows: people.data.students, kind: "user" as const },
             ] as const
           ).map(group => (

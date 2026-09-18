@@ -13,7 +13,7 @@ import { Button, ErrorNote, Field, Input } from "@/components/ui";
 
 const DEMO_LOGINS = [
   { username: "admin", label: "Administrator" },
-  { username: "agent", label: "Room booking agent" },
+  { username: "agent", label: "Agent" },
   { username: "student", label: "Student" },
 ];
 

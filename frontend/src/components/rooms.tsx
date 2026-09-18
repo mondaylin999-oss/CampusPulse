@@ -13,7 +13,7 @@
 // ===========================================================================
 
 import { Link } from "wouter";
-import { ArrowRight, Building2, Clock, DoorClosed, DoorOpen, Users } from "lucide-react";
+import { Clock, DoorClosed, DoorOpen } from "lucide-react";
 import { ROOM_KIND_LABELS, type EffectiveSession, type RoomAvailability, type RoomCard } from "@/lib/api";
 
 type Tone = "available" | "soon" | "occupied" | "closed";
@@ -46,10 +46,10 @@ const TONE_DOT: Record<Tone, string> = {
 };
 
 const TONE_BORDER: Record<Tone, string> = {
-  available: "border-l-secondary",
-  soon: "border-l-warning",
-  occupied: "border-l-error",
-  closed: "border-l-outline",
+  available: "border-secondary/50",
+  soon: "border-warning/50",
+  occupied: "border-error/40",
+  closed: "border-outline-variant",
 };
 
 export function StatusPill({ availability }: { availability: RoomAvailability }) {
@@ -86,58 +86,23 @@ export function AvailabilityLine({ availability }: { availability: RoomAvailabil
 /** One room on the floor grid / search results. The whole tile is the link. */
 export function RoomTile({ room }: { room: RoomCard }) {
   const tone = toneOf(room.availability);
-  const { availability } = room;
   return (
     <Link
       href={`/rooms/${room.roomNumber}`}
-      aria-label={`Room ${room.roomNumber}, ${TONE_TEXT[tone]}`}
-      className={`card group flex min-h-56 flex-col overflow-hidden border-l-4 p-4 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:shadow-raised ${TONE_BORDER[tone]}`}
+      className={`card card-pad flex flex-col gap-2 border-2 transition-colors hover:bg-surface-container-low ${TONE_BORDER[tone]}`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">Room</p>
-          <p className="tabular mt-0.5 text-[32px] font-bold leading-none tracking-tight text-on-surface">{room.roomNumber}</p>
+          <p className="tabular text-[22px] font-bold leading-none text-on-surface">{room.roomNumber}</p>
+          <p className="mt-1 truncate text-[12px] text-on-surface-variant">
+            {room.name ?? ROOM_KIND_LABELS[room.kind]} · {room.buildingName} · floor {room.floorLevel}
+          </p>
         </div>
         <StatusPill availability={room.availability} />
       </div>
-
-      <div className="mt-4 flex-1">
-        {availability.status === "available" ? (
-          <>
-            <p className={`text-[17px] font-bold ${tone === "soon" ? "text-warning" : "text-secondary"}`}>
-              Available for {availability.freeForLabel}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-on-surface-variant">
-              {availability.next ? <>Next: {availability.next.label} at <span className="tabular font-semibold text-on-surface">{availability.next.startTime}</span></> : "Nothing else scheduled today"}
-            </p>
-          </>
-        ) : availability.status === "occupied" ? (
-          <>
-            <p className="text-[17px] font-bold text-error">Available at <span className="tabular">{availability.freeAtTime}</span></p>
-            <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-on-surface-variant">
-              Now: {availability.current?.label ?? "In use"}
-              {availability.current ? <> · <span className="tabular">{availability.current.startTime}–{availability.current.endTime}</span></> : null}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-[17px] font-bold text-on-surface">Unavailable today</p>
-            <p className="mt-1 text-[13px] text-on-surface-variant">{availability.current?.note ?? "This room is temporarily out of use."}</p>
-          </>
-        )}
-      </div>
-
-      {room.name ? <p className="mb-2 truncate text-[12px] font-semibold text-on-surface">{room.name}</p> : null}
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-outline-variant pt-3 text-[11px] font-semibold text-on-surface-variant">
-        <span className="rounded-full bg-primary-container px-2 py-1 text-on-primary-container">{ROOM_KIND_LABELS[room.kind]}</span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-1">
-          <Building2 className="h-3 w-3" /> Building {room.buildingCode} · Floor {room.floorLevel}
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-surface-container px-2 py-1">
-          <Users className="h-3 w-3" /> {room.capacity}
-        </span>
-        <ArrowRight className="ml-auto h-4 w-4 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden />
-      </div>
+      <p className="text-[13px] leading-snug">
+        <AvailabilityLine availability={room.availability} />
+      </p>
     </Link>
   );
 }

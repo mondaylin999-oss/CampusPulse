@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { dateTime } from "@/lib/format";
 import { Badge, Button, Card, Field, Input, Notice, PageHeader, StatTile } from "@/components/ui";
 
-const ROLE_LABEL: Record<string, string> = { admin: "Administrator", agent: "Room-booking agent", user: "Student" };
+const ROLE_LABEL: Record<string, string> = { admin: "Administrator", agent: "Agent", user: "Student" };
 
 export default function Profile() {
   const { user, health } = useAuth();

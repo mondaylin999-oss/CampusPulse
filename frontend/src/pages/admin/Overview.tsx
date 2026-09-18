@@ -19,7 +19,7 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-stack-md">
-      <PageHeader title="University office" subtitle={health ? `${health.campusTime} · ${health.timezone}` : "Connecting…"} />
+      <PageHeader title="University Office" subtitle={health ? `${health.campusTime} · ${health.timezone}` : "Connecting…"} />
 
       {pulse.error ? <ErrorNote message={pulse.error} onRetry={() => void pulse.refresh()} /> : null}
       {pulse.loading && !pulse.data ? <Spinner /> : null}
@@ -46,7 +46,7 @@ export default function AdminOverview() {
               { href: "/admin/timetable", label: "Timetable manager", hint: "Add, edit and search weekly sessions", icon: <CalendarClock className="h-4 w-4" /> },
               { href: "/admin/changes", label: "Timetable changes", hint: "Cancel, move, retime, holidays, closures", icon: <DoorOpen className="h-4 w-4" /> },
               { href: "/admin/campus", label: "Campus & rooms", hint: "Buildings, floors, rooms, batches, subjects", icon: <Building2 className="h-4 w-4" /> },
-              { href: "/admin/people", label: "People & agents", hint: "Manage accounts and room-booking agents", icon: <Users className="h-4 w-4" /> },
+              { href: "/admin/people", label: "People & Agents", hint: "Manage accounts and agents", icon: <Users className="h-4 w-4" /> },
               { href: "/admin/bus/route", label: "Transport ways", hint: "Add and update school bus routes", icon: <Users className="h-4 w-4" /> },
             ].map(item => (
               <li key={item.href}>

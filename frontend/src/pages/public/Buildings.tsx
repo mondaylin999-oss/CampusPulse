@@ -8,7 +8,7 @@
 // ===========================================================================
 
 import { useEffect, useState } from "react";
-import { Building2 } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import { api, type BuildingOverview, type RoomBoard } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { PulseCounters, RoomTile } from "@/components/rooms";
@@ -85,6 +85,37 @@ export default function Buildings() {
         })}
       </div>
 
+      {/* ---------- floor chooser ---------- */}
+      {building ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-on-surface-variant">Floor</span>
+          <ChevronRight className="h-3.5 w-3.5 text-on-surface-variant" />
+          <button
+            className={`rounded-lg border px-3 py-1.5 text-[13px] font-semibold ${
+              floorLevel === null ? "border-secondary bg-secondary-container text-on-secondary-container" : "border-outline-variant text-on-surface hover:bg-surface-container-high"
+            }`}
+            onClick={() => setFloorLevel(null)}
+          >
+            All
+          </button>
+          {building.floors.map(floor => (
+            <button
+              key={floor.id}
+              className={`tabular rounded-lg border px-3 py-1.5 text-[13px] font-semibold ${
+                floorLevel === floor.level
+                  ? "border-secondary bg-secondary-container text-on-secondary-container"
+                  : "border-outline-variant text-on-surface hover:bg-surface-container-high"
+              }`}
+              onClick={() => setFloorLevel(floor.level)}
+              title={`${floor.availableNow} of ${floor.roomCount} rooms free`}
+            >
+              {floor.level}
+              <span className={`ml-1.5 text-[10px] font-bold ${floor.availableNow ? "text-secondary" : "text-error"}`}>{floor.availableNow}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {board.data?.holiday ? <Notice tone="warning">University holiday — {board.data.holiday.reason}.</Notice> : null}
       {board.error ? <ErrorNote message={board.error} onRetry={() => void board.refresh()} /> : null}
       {board.loading && !board.data ? <Spinner label="Checking the rooms…" /> : null}
@@ -93,7 +124,7 @@ export default function Buildings() {
         <>
           <PulseCounters available={board.data.summary.available} occupied={board.data.summary.occupied} total={board.data.summary.total} />
 
-          {buildingBoard.data?.rooms.length ? <Building3D name={building.name} rooms={buildingBoard.data.rooms} selectedFloor={floorLevel} onFloorChange={setFloorLevel} /> : null}
+          {buildingBoard.data?.rooms.length ? <Building3D name={building.name} rooms={buildingBoard.data.rooms} /> : null}
 
           <Card
             title={floorLevel ? `${building.name} — Floor ${floorLevel}` : building.name}

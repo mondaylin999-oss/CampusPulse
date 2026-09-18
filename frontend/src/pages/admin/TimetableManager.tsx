@@ -12,7 +12,7 @@
 // ===========================================================================
 
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Eraser, RotateCcw, Save, Table2 } from "lucide-react";
+import { Copy, Save, Table2 } from "lucide-react";
 import { api, ApiError, DAY_NAMES, type AdminRoom, type BatchRow, type SubjectRow, type TimetableRow } from "@/lib/api";
 import { useApiData } from "@/hooks/useApiData";
 import { Button, Card, ErrorNote, Field, Input, Notice, PageHeader, Select, Spinner } from "@/components/ui";
@@ -45,19 +45,6 @@ function cellFromRow(row: TimetableRow): GridCell {
 function gridKey(row: TimetableRow) {
   const period = PERIODS.findIndex(item => item.start === row.startTime && item.end === row.endTime);
   return period < 0 ? null : `${row.entry.dayOfWeek}-${period}`;
-}
-
-function cellsFromRows(rows: TimetableRow[]) {
-  const next: Record<string, GridCell> = {};
-  for (const row of rows) {
-    const key = gridKey(row);
-    if (key) next[key] = cellFromRow(row);
-  }
-  return next;
-}
-
-function everyGridKey() {
-  return new Set(Array.from({ length: 5 }, (_unused, day) => PERIODS.map((_period, period) => `${day + 1}-${period}`)).flat());
 }
 
 function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; subjects: SubjectRow[]; rooms: AdminRoom[] }) {
@@ -119,7 +106,12 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
   }, [batchId, batches]);
 
   useEffect(() => {
-    setCells(cellsFromRows(timetable.data?.entries ?? []));
+    const next: Record<string, GridCell> = {};
+    for (const row of timetable.data?.entries ?? []) {
+      const key = gridKey(row);
+      if (key) next[key] = cellFromRow(row);
+    }
+    setCells(next);
     setDirty(new Set());
   }, [timetable.data]);
 
@@ -159,30 +151,6 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     });
   };
 
-  const selectBatch = (destination: string) => {
-    if (destination === batchId || !confirmDiscard()) return;
-    setBatchId(destination);
-    setCopyFromBatchId(current => current === destination ? "" : current);
-    setMessage(null);
-  };
-
-  const discardDraft = () => {
-    if (!hasUnsavedChanges || !window.confirm("Discard all unsaved timetable changes?")) return;
-    setCells(cellsFromRows(timetable.data?.entries ?? []));
-    setDirty(new Set());
-    setMessage(null);
-  };
-
-  const clearWeek = () => {
-    if (!window.confirm("Clear every period in this section? Nothing is deleted until you click Save timetable.")) return;
-    const blank: Record<string, GridCell> = {};
-    const changed = everyGridKey();
-    for (const key of changed) blank[key] = { ...EMPTY_CELL };
-    setCells(blank);
-    setDirty(changed);
-    setMessage({ tone: "rooms", text: "The complete week is cleared in the editor. Click Save timetable to apply it, or Discard changes to restore it." });
-  };
-
   const saveAll = async () => {
     if (!batchId || !dirty.size) return;
     setSaving(true); setMessage(null);
@@ -208,22 +176,10 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     } finally { setSaving(false); }
   };
 
-  const selectedBatch = batches.find(row => String(row.id) === batchId);
-
   return <Card title="Spreadsheet timetable" subtitle="Select a class, edit cells like a worksheet, then save all changes together." actions={<Table2 className="h-5 w-5 text-on-surface-variant" />}>
-    <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => selectBatch(event.target.value)}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
-        <div className="flex flex-1 flex-wrap items-center gap-2 sm:justify-end">
-          <span className={`rounded-full px-3 py-2 text-[12px] font-bold ${hasUnsavedChanges ? "bg-warning-container text-on-warning-container" : "bg-secondary-container text-on-secondary-container"}`}>
-            {hasUnsavedChanges ? `${dirty.size} unsaved cell${dirty.size === 1 ? "" : "s"}` : "All changes saved"}
-          </span>
-          <Button variant="ghost" onClick={discardDraft} disabled={!hasUnsavedChanges || saving}><RotateCcw className="h-4 w-4" />Discard changes</Button>
-          <Button variant="danger" onClick={clearWeek} disabled={!batchId || saving}><Eraser className="h-4 w-4" />Clear week</Button>
-          <Button onClick={() => void saveAll()} busy={saving} disabled={!dirty.size}><Save className="h-4 w-4" />Save timetable</Button>
-        </div>
-      </div>
-      {selectedBatch ? <p className="mt-2 text-[12px] text-on-surface-variant">Editing <span className="font-semibold text-on-surface">{selectedBatch.code} — {selectedBatch.name}</span> · Monday–Friday · six fixed periods</p> : null}
+    <div className="mb-4 flex flex-wrap items-end gap-3">
+      <Field label="Batch and section"><Select className="min-w-64" value={batchId} onChange={event => { const destination = event.target.value; if (!confirmDiscard()) return; setBatchId(destination); setCopyFromBatchId(current => current === destination ? "" : current); setMessage(null); }}>{batches.map(row => <option key={row.id} value={row.id}>{row.code} — {row.name}</option>)}</Select></Field>
+      <Button onClick={() => void saveAll()} busy={saving} disabled={!dirty.size}><Save className="h-4 w-4" />Save timetable{dirty.size ? ` (${dirty.size})` : ""}</Button>
     </div>
     <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -245,21 +201,20 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
     {message ? <div className="mb-4"><Notice tone={message.tone}>{message.text}</Notice></div> : null}
     {timetable.error ? <ErrorNote message={timetable.error} onRetry={() => void timetable.refresh()} /> : null}
     {timetable.loading && !timetable.data ? <Spinner /> : null}
-    <div className="max-h-[72vh] overflow-auto rounded-xl border border-outline-variant"><table className="data-table min-w-[1320px] table-fixed">
-      <thead><tr><th className="sticky left-0 top-0 z-30 w-28 bg-surface-container-lowest shadow-[1px_1px_0_var(--color-outline-variant)]">Day</th>{PERIODS.map(period => <th key={period.label} className="sticky top-0 z-20 bg-surface-container-lowest text-center shadow-[0_1px_0_var(--color-outline-variant)]">{period.label}</th>)}</tr></thead>
-      <tbody>{[1,2,3,4,5].map(day => <tr key={day}><th className="sticky left-0 z-10 bg-surface-container-lowest shadow-[1px_0_0_var(--color-outline-variant)]">{DAY_NAMES[day]}</th>{PERIODS.map((_period, index) => {
+    <div className="overflow-x-auto"><table className="data-table min-w-[1320px] table-fixed">
+      <thead><tr><th className="w-28">Day</th>{PERIODS.map(period => <th key={period.label} className="text-center">{period.label}</th>)}</tr></thead>
+      <tbody>{[1,2,3,4,5].map(day => <tr key={day}><th>{DAY_NAMES[day]}</th>{PERIODS.map((_period, index) => {
         const key = `${day}-${index}`; const cell = cells[key] ?? EMPTY_CELL;
         const hasLecture = Boolean(cell.title || cell.teacher.trim());
         const hasDepartment = Boolean(cell.department.trim());
-        const changed = dirty.has(key);
-        return <td key={key} className={`space-y-1.5 align-top transition-colors ${changed ? "bg-warning-container/60 ring-2 ring-inset ring-warning/50" : "bg-surface-container-lowest"}`}>
-          <Select className="h-9 text-[13px]" aria-label={`${DAY_NAMES[day]} period ${index + 1} subject`} value={cell.subjectId} onChange={event => change(key, { subjectId: event.target.value })}><option value="">Empty</option>{subjects.map(row => <option key={row.id} value={row.id}>{row.code}</option>)}</Select>
-          <Select className="h-9 text-[13px]" aria-label={`${DAY_NAMES[day]} period ${index + 1} room`} value={cell.roomId} onChange={event => change(key, { roomId: event.target.value })}><option value="">Room</option>{rooms.map(row => <option key={row.room.id} value={row.room.id}>{row.room.roomNumber}</option>)}</Select>
+        return <td key={key} className={`space-y-1.5 align-top ${dirty.has(key) ? "bg-warning-container/30" : ""}`}>
+          <Select aria-label={`${DAY_NAMES[day]} period ${index + 1} subject`} value={cell.subjectId} onChange={event => change(key, { subjectId: event.target.value })}><option value="">Empty</option>{subjects.map(row => <option key={row.id} value={row.id}>{row.code}</option>)}</Select>
+          <Select aria-label={`${DAY_NAMES[day]} period ${index + 1} room`} value={cell.roomId} onChange={event => change(key, { roomId: event.target.value })}><option value="">Room</option>{rooms.map(row => <option key={row.room.id} value={row.room.id}>{row.room.roomNumber}</option>)}</Select>
           <div className="grid grid-cols-[78px_1fr] gap-1">
-            <Select className="h-9 text-[13px]" aria-label="Class type" value={cell.title} disabled={hasDepartment} onChange={event => change(key, { title: event.target.value, department: "" })}><option value="">Type</option><option value="L">L</option><option value="TDA">TDA</option></Select>
-            <Input className="h-9 text-[13px]" aria-label="Lecturer" placeholder="Lecturer" value={cell.teacher} disabled={hasDepartment} onChange={event => change(key, { teacher: event.target.value, department: "" })} />
+            <Select aria-label="Class type" value={cell.title} disabled={hasDepartment} onChange={event => change(key, { title: event.target.value, department: "" })}><option value="">Type</option><option value="L">L</option><option value="TDA">TDA</option></Select>
+            <Input aria-label="Lecturer" placeholder="Lecturer" value={cell.teacher} disabled={hasDepartment} onChange={event => change(key, { teacher: event.target.value, department: "" })} />
           </div>
-          <Input className="h-9 text-[13px]" aria-label="Department" placeholder="Department (Myanmar, English…)" value={cell.department} disabled={hasLecture} onChange={event => change(key, { department: event.target.value, title: "", teacher: "" })} />
+          <Input aria-label="Department" placeholder="Department (Myanmar, English…)" value={cell.department} disabled={hasLecture} onChange={event => change(key, { department: event.target.value, title: "", teacher: "" })} />
         </td>;
       })}</tr>)}</tbody>
     </table></div>
@@ -280,7 +235,7 @@ function SpreadsheetEditor({ batches, subjects, rooms }: { batches: BatchRow[]; 
             <button
               key={batch.id}
               type="button"
-              onClick={() => selectBatch(String(batch.id))}
+              onClick={() => setBatchId(String(batch.id))}
               className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                 String(batch.id) === batchId
                   ? "border-primary bg-primary text-on-primary"
