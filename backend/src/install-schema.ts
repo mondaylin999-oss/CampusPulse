@@ -1,6 +1,6 @@
-// Installs or upgrades the idempotent PostgreSQL schema before Render starts
-// the API. This keeps Supabase setup reproducible and avoids copying hundreds
-// of lines through its SQL editor by hand.
+// Installs or upgrades the idempotent PostgreSQL schema before the API starts.
+// Keeping schema installation in code makes local setup reproducible and
+// avoids copying hundreds of SQL lines by hand.
 
 import "dotenv/config";
 import { readFile } from "node:fs/promises";
@@ -16,7 +16,7 @@ async function main() {
 
   // In source this file is backend/src/install-schema.ts; after compilation it
   // is backend/dist/src/install-schema.js. Resolve both layouts so the command
-  // works locally and as Render's pre-deploy command.
+  // works locally and in a future deployment pipeline.
   const repositoryRoot = path.resolve(here, here.endsWith(`${path.sep}dist${path.sep}src`) ? "../../.." : "../..");
   const schemaPath = path.join(repositoryRoot, "database", "schema.sql");
   const schema = await readFile(schemaPath, "utf8");
@@ -34,7 +34,7 @@ async function main() {
 main().catch(error => {
   // pg can surface connection failures as AggregateError with an empty top-level
   // message. Print the useful error fields and nested causes, but never the
-  // connection string because Render logs are retained remotely.
+  // connection string because process logs may be retained or shared.
   const details = (value: unknown): string => {
     if (!(value instanceof Error)) return String(value);
 

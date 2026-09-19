@@ -24,12 +24,20 @@ CampusPulse is a university platform for public room availability, class timetab
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS
 - Backend: Express, TypeScript, Drizzle ORM
-- Database: PostgreSQL / Supabase
-- Hosting: Vercel frontend and Render backend
+- Database: PostgreSQL
+- Current hosting status: offline; the previous Vercel, Render, and Supabase projects are paused or deleted
+
+## Current availability
+
+CampusPulse is not currently published on the internet. The former public URLs
+are inactive and should not be used. Run the frontend, backend, and PostgreSQL
+database locally by following the instructions below.
 
 ## Local development
 
-Create `backend/.env` from `backend/.env.example`, then configure `DATABASE_URL`, `JWT_SECRET`, and `SEED_PASSWORD`.
+Install PostgreSQL and create a database named `campuspulse_db`. Create
+`backend/.env` from `backend/.env.example`, then configure `DATABASE_URL`,
+`JWT_SECRET`, and `SEED_PASSWORD`.
 
 ```bash
 cd backend
@@ -37,6 +45,13 @@ npm install
 npm run db:init
 npm run dev
 ```
+
+Open `http://localhost:5173`. The Vite development server forwards API calls
+to the backend at `http://localhost:8000`.
+
+The public pages do not require an account. The initial administrator and
+agent accounts use the password configured in `SEED_PASSWORD`; change it from
+the example value before sharing the system with other people.
 
 In another terminal:
 
@@ -58,8 +73,9 @@ npm run check
 npm run build
 ```
 
-## Public deployment
+## Hosting later
 
-- Public site: https://campuspulse-ruddy.vercel.app
-- Admin: https://campuspulse-ruddy.vercel.app/admin
-- Agent: https://campuspulse-ruddy.vercel.app/agent
+No cloud provider configuration is active in this repository. If the platform
+is published again, configure a PostgreSQL database, deploy the backend and
+frontend, set their environment variables, and add the new verified URLs to
+this README. Never commit database passwords or service credentials.

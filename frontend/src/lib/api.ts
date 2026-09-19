@@ -6,7 +6,7 @@
 //  The app does not assume one fixed URL. It tries several, in order, and
 //  keeps the first that answers /health:
 //
-//    1. VITE_API_URL from frontend/.env, if you set one (use in production)
+//    1. VITE_API_URL from frontend/.env, if you set a fixed local/LAN API URL
 //    2. <this page's origin>/api  — the Vite dev proxy in vite.config.ts.
 //       This works no matter which address you opened the page from,
 //       including from your phone on the same Wi-Fi.
